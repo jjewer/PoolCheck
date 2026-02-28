@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0369a1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PoolCheck">
+<meta name="description" content="AI-powered pool water test strip analyzer">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<title>PoolCheck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --water: #0ea5e9;
+    --deep: #0c4a6e;
+    --surface: #f0f9ff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e0f2fe;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    min-height: 100vh;
+    min-height: 100dvh;
+    color: var(--text);
+    overflow-x: hidden;
+    /* Safe area for notches */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 240px;
+    background: linear-gradient(160deg, #0369a1 0%, #0ea5e9 50%, #38bdf8 100%);
+    z-index: 0;
+    clip-path: ellipse(120% 100% at 50% 0%);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: -50%; right: -50%;
+    height: 260px;
+    background: repeating-linear-gradient(
+      transparent 0px, transparent 18px,
+      rgba(255,255,255,0.07) 18px, rgba(255,255,255,0.07) 20px
+    );
+    z-index: 1;
+    animation: ripple 4s ease-in-out infinite;
+    clip-path: ellipse(120% 100% at 50% 0%);
+  }
+
+  @keyframes ripple {
+    0%, 100% { transform: translateX(0) scaleY(1); }
+    50% { transform: translateX(3%) scaleY(1.03); }
+  }
+
+  .header {
+    position: relative;
+    z-index: 10;
+    padding: 48px 24px 16px;
+    text-align: center;
+    color: white;
+  }
+
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    line-height: 1;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+  }
+
+  .header p {
+    font-size: 13px;
+    font-weight: 300;
+    opacity: 0.85;
+    margin-top: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tab-nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 17px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab-btn.active {
+    background: white;
+    color: var(--deep);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  .tab-btn:not(.active) {
+    background: rgba(255,255,255,0.2);
+    color: white;
+  }
+
+  .history-count {
+    display: inline-block;
+    background: var(--water);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  .tab-btn.active .history-count { background: var(--deep); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .main {
+    position: relative;
+    z-index: 10;
+    padding: 0 16px 40px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .upload-card {
+    background: white;
+    border-radius: 24px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 32px rgba(14,165,233,0.15), 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+  }
+
+  .upload-zone {
+    border: 2px dashed #bae6fd;
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f0f9ff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:active { background: #e0f2fe; border-color: var(--water); }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+
+  .upload-icon { font-size: 40px; margin-bottom: 10px; display: block; }
+  .upload-zone h3 { font-size: 16px; font-weight: 600; color: var(--deep); margin-bottom: 4px; }
+  .upload-zone p { font-size: 13px; color: var(--muted); }
+
+  #preview-wrap {
+    display: none;
+    margin-top: 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #preview-wrap img {
+    width: 100%;
+    display: block;
+    border-radius: 14px;
+    max-height: 280px;
+    object-fit: cover;
+  }
+
+  .change-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .analyze-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 18px;
+    background: linear-gradient(135deg, #0369a1, #0ea5e9);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(14,165,233,0.4);
+    display: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .analyze-btn:active { transform: scale(0.98); }
+  .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .loading { display: none; text-align: center; padding: 20px; }
+
+  .wave-loader { display: flex; justify-content: center; gap: 5px; margin-bottom: 12px; }
+
+  .wave-loader span {
+    width: 8px; height: 8px;
+    background: var(--water);
+    border-radius: 50%;
+    animation: wave 1.2s ease-in-out infinite;
+  }
+
+  .wave-loader span:nth-child(2) { animation-delay: 0.15s; }
+  .wave-loader span:nth-child(3) { animation-delay: 0.3s; }
+  .wave-loader span:nth-child(4) { animation-delay: 0.45s; }
+
+  @keyframes wave {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-12px); }
+  }
+
+  .loading p { color: var(--muted); font-size: 14px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+  #results { display: none; }
+
+  .results-header {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--deep);
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .param-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: slideUp 0.4s ease both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .param-card:nth-child(2) { animation-delay: 0.05s; }
+  .param-card:nth-child(3) { animation-delay: 0.1s; }
+  .param-card:nth-child(4) { animation-delay: 0.15s; }
+
+  .status-dot {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .status-ok .status-dot { background: #d1fae5; }
+  .status-low .status-dot { background: #fef3c7; }
+  .status-high .status-dot { background: #fee2e2; }
+  .status-unknown .status-dot { background: #f1f5f9; }
+
+  .param-info { flex: 1; }
+
+  .param-name {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 2px;
+  }
+
+  .param-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 1px; line-height: 1;
+    color: var(--text);
+  }
+
+  .param-unit { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); margin-left: 3px; }
+  .param-range { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .status-badge {
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+
+  .status-ok .status-badge { background: #d1fae5; color: #065f46; }
+  .status-low .status-badge { background: #fef3c7; color: #92400e; }
+  .status-high .status-badge { background: #fee2e2; color: #991b1b; }
+  .status-unknown .status-badge { background: #f1f5f9; color: #475569; }
+
+  .advice-card {
+    background: linear-gradient(135deg, #0c4a6e, #0369a1);
+    color: white; border-radius: 20px; padding: 20px;
+    margin-bottom: 12px; animation: slideUp 0.4s 0.2s ease both;
+  }
+
+  .advice-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 1.5px; margin-bottom: 8px; opacity: 0.9;
+  }
+
+  .advice-card p { font-size: 14px; line-height: 1.6; opacity: 0.85; }
+
+  .new-test-btn {
+    width: 100%; padding: 16px;
+    background: white; border: 2px solid var(--border);
+    border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 2px;
+    color: var(--deep); cursor: pointer; transition: all 0.2s;
+    animation: slideUp 0.4s 0.25s ease both;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .new-test-btn:active { background: var(--surface); }
+
+  .error-card {
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 16px; padding: 16px; color: #991b1b;
+    font-size: 14px; display: none; margin-top: 12px;
+  }
+
+  /* Install banner */
+  .install-banner {
+    display: none;
+    background: linear-gradient(135deg, #065f46, #10b981);
+    color: white; border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 16px; font-size: 13px; line-height: 1.5;
+    animation: slideUp 0.3s ease both;
+    align-items: center; gap: 12px;
+  }
+
+  .install-banner.show { display: flex; }
+
+  .install-banner-text { flex: 1; }
+  .install-banner-text strong { display: block; font-size: 14px; margin-bottom: 2px; }
+
+  .install-btn-small {
+    background: white; color: #065f46;
+    border: none; border-radius: 10px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dismiss-install {
+    background: none; border: none; color: rgba(255,255,255,0.7);
+    font-size: 18px; cursor: pointer; padding: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* HISTORY */
+  .history-empty {
+    text-align: center; padding: 60px 24px; color: var(--muted);
+  }
+
+  .history-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .history-empty h3 { font-size: 18px; font-weight: 600; color: var(--deep); margin-bottom: 6px; }
+  .history-empty p { font-size: 14px; }
+
+  .history-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 2px;
+  }
+
+  .history-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 2px; color: var(--deep);
+  }
+
+  .clear-btn {
+    font-size: 13px; color: #ef4444; background: none;
+    border: 1px solid #fecaca; border-radius: 8px;
+    padding: 5px 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .history-entry {
+    background: white; border-radius: 20px; padding: 18px 20px;
+    margin-bottom: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    animation: slideUp 0.3s ease both;
+  }
+
+  .history-entry-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 12px;
+  }
+
+  .history-date { font-size: 13px; font-weight: 600; color: var(--deep); }
+  .history-time { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .overall-badge {
+    font-size: 11px; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .overall-ok { background: #d1fae5; color: #065f46; }
+  .overall-warn { background: #fef3c7; color: #92400e; }
+  .overall-bad { background: #fee2e2; color: #991b1b; }
+
+  .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .history-param {
+    background: var(--surface); border-radius: 10px; padding: 10px 12px;
+  }
+
+  .history-param-label {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); margin-bottom: 4px;
+  }
+
+  .history-param-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .history-param-value {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--text);
+  }
+
+  .mini-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px; text-transform: uppercase;
+  }
+
+  .mini-ok { background: #d1fae5; color: #065f46; }
+  .mini-low { background: #fef3c7; color: #92400e; }
+  .mini-high { background: #fee2e2; color: #991b1b; }
+  .mini-unknown { background: #f1f5f9; color: #475569; }
+
+  .history-advice {
+    margin-top: 10px; font-size: 13px; color: var(--muted);
+    line-height: 1.5; padding-top: 10px; border-top: 1px solid #f1f5f9;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>PoolCheck</h1>
+  <p>AI-Powered Water Analysis</p>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-analyze" onclick="showTab('analyze')">📸 Analyze</button>
+  <button class="tab-btn" id="tab-history" onclick="showTab('history')">
+    📋 History <span class="history-count" id="history-count">0</span>
+  </button>
+</div>
+
+<!-- ANALYZE PAGE -->
+<div class="page active" id="page-analyze">
+  <div class="main">
+
+    <!-- PWA install banner -->
+    <div class="install-banner" id="install-banner">
+      <div class="install-banner-text">
+        <strong>📲 Install PoolCheck</strong>
+        Add to your home screen for quick access
+      </div>
+      <button class="install-btn-small" id="install-btn" onclick="installPWA()">Install</button>
+      <button class="dismiss-install" onclick="dismissInstall()">✕</button>
+    </div>
+
+    <div class="upload-card">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" accept="image/*" capture="environment" id="file-input">
+        <span class="upload-icon">📸</span>
+        <h3>Snap Your Test Strip</h3>
+        <p>Dip strip, wait 15 seconds, then take a photo</p>
+      </div>
+
+      <div id="preview-wrap">
+        <img id="preview-img" src="" alt="Test strip preview">
+        <button class="change-btn" onclick="resetUpload()">Change</button>
+      </div>
+
+      <button class="analyze-btn" id="analyze-btn" onclick="analyzeStrip()">
+        Analyze Strip
+      </button>
+
+      <div class="loading" id="loading">
+        <div class="wave-loader">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <p id="loading-text">Analyzing your water chemistry...</p>
+      </div>
+
+      <div class="error-card" id="error-card"></div>
+    </div>
+
+    <div id="results">
+      <div class="results-header">Your Results</div>
+      <div id="params-container"></div>
+      <div class="advice-card">
+        <h3>💡 Recommendations</h3>
+        <p id="advice-text"></p>
+      </div>
+      <button class="new-test-btn" onclick="resetAll()">🔄 Test Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div class="main">
+    <div id="history-container"></div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──
+const PARAM_NAMES  = { ph: 'pH', chlorine: 'Free Chlorine', alkalinity: 'Total Alkalinity', stabilizer: 'Stabilizer (CYA)' };
+const PARAM_UNITS  = { ph: '', chlorine: 'ppm', alkalinity: 'ppm', stabilizer: 'ppm' };
+const PARAM_RANGES = { ph: 'OK: 7.2–7.8', chlorine: 'Pool OK: 1–3 ppm', alkalinity: 'OK: 80–120 ppm', stabilizer: 'Ideal: 30–50 ppm' };
+const PARAM_EMOJI  = { ph: '🧪', chlorine: '💧', alkalinity: '⚗️', stabilizer: '☀️' };
+const PARAM_KEYS   = ['ph', 'chlorine', 'alkalinity', 'stabilizer'];
+const STATUS_LABELS = { ok: 'OK', low: 'LOW', high: 'HIGH', unknown: '?' };
+const STORAGE_KEY  = 'poolcheck-history';
+
+let imageBase64 = null;
+let deferredPrompt = null;
+
+// ── PWA Install ──
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.remove('show');
+  deferredPrompt = null;
+});
+
+async function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') {
+    document.getElementById('install-banner').classList.remove('show');
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// ── Tab switching ──
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+// ── Storage ──
+async function loadHistory() {
+  try {
+    const res = await window.storage.get(STORAGE_KEY);
+    return res ? JSON.parse(res.value) : [];
+  } catch { return []; }
+}
+
+async function saveHistory(entries) {
+  try { await window.storage.set(STORAGE_KEY, JSON.stringify(entries)); }
+  catch (e) { console.error('Storage save error', e); }
+}
+
+async function addToHistory(result) {
+  const entries = await loadHistory();
+  entries.unshift({
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    ph: result.ph,
+    chlorine: result.chlorine,
+    alkalinity: result.alkalinity,
+    stabilizer: result.stabilizer,
+    advice: result.advice || ''
+  });
+  await saveHistory(entries);
+  await updateHistoryCount();
+}
+
+async function updateHistoryCount() {
+  const entries = await loadHistory();
+  document.getElementById('history-count').textContent = entries.length;
+}
+
+// ── Upload ──
+const fileInput   = document.getElementById('file-input');
+const previewWrap = document.getElementById('preview-wrap');
+const previewImg  = document.getElementById('preview-img');
+const analyzeBtn  = document.getElementById('analyze-btn');
+const uploadZone  = document.getElementById('upload-zone');
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    imageBase64 = ev.target.result.split(',')[1];
+    previewImg.src = ev.target.result;
+    previewWrap.style.display = 'block';
+    uploadZone.style.display = 'none';
+    analyzeBtn.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+function resetUpload() {
+  fileInput.value = '';
+  imageBase64 = null;
+  previewWrap.style.display = 'none';
+  uploadZone.style.display = 'block';
+  analyzeBtn.style.display = 'none';
+  document.getElementById('error-card').style.display = 'none';
+}
+
+function resetAll() {
+  resetUpload();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('params-container').innerHTML = '';
+}
+
+// ── Analyze ──
+async function analyzeStrip() {
+  if (!imageBase64) return;
+
+  analyzeBtn.disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('error-card').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+
+  const texts = ["Analyzing your water chemistry...", "Reading color pads...", "Comparing to reference chart...", "Calculating results..."];
+  let ti = 0;
+  const tInterval = setInterval(() => {
+    document.getElementById('loading-text').textContent = texts[++ti % texts.length];
+  }, 1800);
+
+  const systemPrompt = `You are a pool water chemistry expert analyzing a test strip photo.
+
+The test strips use these color ranges (Hach 4-in-1):
+pH: 6.2 (orange-tan), 6.8 (orange), 7.2 (salmon/orange-red), 7.8 (pink-red), 8.4 (red). OK range: 7.2–7.8.
+Free Chlorine (ppm): 0 (white/cream), 0.5 (very pale lavender), 1 (light purple), 3 (medium purple), 5 (purple), 10 (dark purple). Pool OK: 1–3 ppm.
+Total Alkalinity (ppm): 0 (tan/orange), 40 (olive-tan), 80 (olive green), 120 (teal-green), 180 (teal), 240 (dark teal). OK: 80–120 ppm.
+Stabilizer/CYA (ppm): 0 (tan/orange), 30–50 (mauve/muted pink — IDEAL), 100 (pink-purple), 150 (medium purple), 300 (dark purple). Ideal: 30–50 ppm.
+
+Respond ONLY with a JSON object (no markdown, no extra text):
+{"ph":{"value":"7.2","status":"ok"},"chlorine":{"value":"1","status":"ok"},"alkalinity":{"value":"80","status":"ok"},"stabilizer":{"value":"30-50","status":"ok"},"advice":"Brief 1-2 sentence summary and any actions needed."}
+Status must be: "ok", "low", "high", or "unknown".`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageBase64 } },
+            { type: "text", text: "Analyze this pool test strip and return JSON results." }
+          ]
+        }]
+      })
+    });
+
+    clearInterval(tInterval);
+    document.getElementById('loading').style.display = 'none';
+
+    const data = await response.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    displayResults(result);
+    await addToHistory(result);
+
+  } catch (err) {
+    clearInterval(tInterval);
+    document.getElementById('loading').style.display = 'none';
+    const errCard = document.getElementById('error-card');
+    errCard.style.display = 'block';
+    errCard.textContent = '⚠️ Could not analyze the image. Please try again with a clearer photo.';
+    analyzeBtn.disabled = false;
+  }
+}
+
+// ── Display results ──
+function displayResults(result) {
+  const container = document.getElementById('params-container');
+  container.innerHTML = '';
+
+  PARAM_KEYS.forEach(key => {
+    const item = result[key] || { value: '—', status: 'unknown' };
+    const card = document.createElement('div');
+    card.className = `param-card status-${item.status}`;
+    const unit = PARAM_UNITS[key] ? `<span class="param-unit">${PARAM_UNITS[key]}</span>` : '';
+    card.innerHTML = `
+      <div class="status-dot">${PARAM_EMOJI[key]}</div>
+      <div class="param-info">
+        <div class="param-name">${PARAM_NAMES[key]}</div>
+        <div class="param-value">${item.value}${unit}</div>
+        <div class="param-range">${PARAM_RANGES[key]}</div>
+      </div>
+      <div class="status-badge">${STATUS_LABELS[item.status] || '?'}</div>`;
+    container.appendChild(card);
+  });
+
+  document.getElementById('advice-text').textContent = result.advice || 'Analysis complete.';
+  document.getElementById('results').style.display = 'block';
+  analyzeBtn.disabled = false;
+  setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// ── History ──
+async function renderHistory() {
+  const container = document.getElementById('history-container');
+  const entries = await loadHistory();
+
+  if (entries.length === 0) {
+    container.innerHTML = `
+      <div class="history-empty">
+        <div class="empty-icon">🏊</div>
+        <h3>No tests yet</h3>
+        <p>Analyze your first test strip to start tracking your pool water history.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="history-toolbar">
+      <div class="history-title">History</div>
+      <button class="clear-btn" onclick="clearHistory()">🗑 Clear All</button>
+    </div>
+    <div id="history-list"></div>`;
+
+  const list = document.getElementById('history-list');
+
+  entries.forEach((entry, idx) => {
+    const date = new Date(entry.timestamp);
+    const dateStr = date.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+
+    const statuses = PARAM_KEYS.map(k => entry[k]?.status || 'unknown');
+    const hasHigh = statuses.includes('high');
+    const hasLow  = statuses.includes('low');
+    const oc = hasHigh ? 'overall-bad' : hasLow ? 'overall-warn' : 'overall-ok';
+    const ol = hasHigh ? '⚠️ Issues' : hasLow ? '⬇️ Low' : '✅ All OK';
+
+    const entryEl = document.createElement('div');
+    entryEl.className = 'history-entry';
+    entryEl.style.animationDelay = (idx * 0.04) + 's';
+
+    const gridHTML = PARAM_KEYS.map(key => {
+      const item = entry[key] || { value: '—', status: 'unknown' };
+      const unit = PARAM_UNITS[key] ? ` <span style="font-size:11px;color:var(--muted)">${PARAM_UNITS[key]}</span>` : '';
+      return `
+        <div class="history-param">
+          <div class="history-param-label">${PARAM_EMOJI[key]} ${PARAM_NAMES[key]}</div>
+          <div class="history-param-row">
+            <div class="history-param-value">${item.value}${unit}</div>
+            <div class="mini-badge mini-${item.status}">${STATUS_LABELS[item.status] || '?'}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    entryEl.innerHTML = `
+      <div class="history-entry-header">
+        <div>
+          <div class="history-date">${dateStr}</div>
+          <div class="history-time">${timeStr}</div>
+        </div>
+        <div class="overall-badge ${oc}">${ol}</div>
+      </div>
+      <div class="history-grid">${gridHTML}</div>
+      ${entry.advice ? `<div class="history-advice">💡 ${entry.advice}</div>` : ''}`;
+
+    list.appendChild(entryEl);
+  });
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all test history? This cannot be undone.')) return;
+  await saveHistory([]);
+  await updateHistoryCount();
+  renderHistory();
+}
+
+// Init
+updateHistoryCount();
+</script>
+</body>
+</html>
