@@ -479,7 +479,6 @@
 <div class="header">
   <h1>PoolCheck</h1>
   <p>Vision-Based Water Analysis</p>
-  <div id="version-badge" style="display:inline-block;margin-top:8px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:3px 12px;font-size:11px;letter-spacing:1px;font-weight:600;color:rgba(255,255,255,0.9);"><span class="app-version">v6</span></div>
 </div>
 
 <div id="app-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
@@ -665,7 +664,7 @@ const PARAM_RANGES = { ph: 'OK: 7.2–7.8', chlorine: 'Pool OK: 1–3 ppm', alka
 const STATUS_LABELS = { ok: 'OK', low: 'LOW', high: 'HIGH', unknown: '?' };
 const HISTORY_KEY = 'poolcheck-v2-history';
 // ── App Version (single source of truth — update this + sw.js CACHE together) ──
-const APP_VERSION = 'v6';
+const APP_VERSION = 'v7';
 
 // ═══════════════════════════════════════════════════════
 //  STATE
@@ -737,6 +736,7 @@ function showMarkStep() {
   currentPadIndex = 0;
   padRegions = {};
   sampledColors = {};
+  zoomRegion = null;
   updateMarkUI();
 }
 
@@ -765,36 +765,82 @@ function updateMarkUI() {
   redrawCanvas();
 }
 
-function redrawCanvas() {
-  ctx.drawImage(imgElement, 0, 0, canvasDisplayW, canvasDisplayH);
+// Zoom viewport — null means full image, otherwise {x,y,w,h} in natural coords
+let zoomRegion = null;
 
-  // Draw already-confirmed pads
-  PAD_ORDER.slice(0, currentPadIndex).forEach((k, i) => {
-    const r = padRegions[k];
-    if (!r) return;
-    // Convert natural coords back to display
-    const dx = r.x / scaleX, dy = r.y / scaleY;
-    const dw = r.w / scaleX, dh = r.h / scaleY;
-    ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(dx, dy, dw, dh);
-    ctx.fillStyle = 'rgba(16,185,129,0.15)';
-    ctx.fillRect(dx, dy, dw, dh);
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 11px DM Sans, sans-serif';
-    ctx.fillText(PAD_LABELS[k], dx + 3, dy + 13);
+function computeZoomRegion() {
+  // Build bounding box of all confirmed pads with padding
+  const confirmed = PAD_ORDER.slice(0, currentPadIndex).map(k => padRegions[k]).filter(Boolean);
+  if (confirmed.length === 0) { zoomRegion = null; return; }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  confirmed.forEach(r => {
+    minX = Math.min(minX, r.x); minY = Math.min(minY, r.y);
+    maxX = Math.max(maxX, r.x + r.w); maxY = Math.max(maxY, r.y + r.h);
   });
+  // Add generous padding (20% of strip span)
+  const padX = Math.max(30, (maxX - minX) * 0.25);
+  const padY = Math.max(30, (maxY - minY) * 0.25);
+  zoomRegion = {
+    x: Math.max(0, Math.round(minX - padX)),
+    y: Math.max(0, Math.round(minY - padY)),
+    w: Math.min(naturalW, Math.round((maxX - minX) + padX * 2)),
+    h: Math.min(naturalH, Math.round((maxY - minY) + padY * 2))
+  };
+  // Clamp to image bounds
+  zoomRegion.w = Math.min(zoomRegion.w, naturalW - zoomRegion.x);
+  zoomRegion.h = Math.min(zoomRegion.h, naturalH - zoomRegion.y);
+}
 
-  // Draw current drag selection
-  if (currentRegion) {
-    const { x, y, w, h } = currentRegion;
-    ctx.strokeStyle = '#facc15';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeRect(x, y, w, h);
-    ctx.fillStyle = 'rgba(250,204,21,0.15)';
-    ctx.fillRect(x, y, w, h);
-    ctx.setLineDash([]);
+function redrawCanvas() {
+  const zoom = zoomRegion;
+
+  if (zoom) {
+    // Draw zoomed crop: source = zoom region in natural px, dest = full canvas
+    ctx.drawImage(imgElement,
+      zoom.x, zoom.y, zoom.w, zoom.h,
+      0, 0, canvasDisplayW, canvasDisplayH
+    );
+    // Scale factors for this zoomed view
+    const zScaleX = zoom.w / canvasDisplayW;
+    const zScaleY = zoom.h / canvasDisplayH;
+
+    // Draw confirmed pad markers (in zoomed coords)
+    PAD_ORDER.slice(0, currentPadIndex).forEach(k => {
+      const r = padRegions[k];
+      if (!r) return;
+      const dx = (r.x - zoom.x) / zScaleX;
+      const dy = (r.y - zoom.y) / zScaleY;
+      const dw = r.w / zScaleX;
+      const dh = r.h / zScaleY;
+      ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2;
+      ctx.strokeRect(dx, dy, dw, dh);
+      ctx.fillStyle = 'rgba(16,185,129,0.18)'; ctx.fillRect(dx, dy, dw, dh);
+      ctx.fillStyle = '#10b981'; ctx.font = 'bold 11px DM Sans, sans-serif';
+      ctx.fillText(PAD_LABELS[k], dx + 3, dy + 13);
+    });
+
+    // Draw current drag selection (already in display coords)
+    if (currentRegion) {
+      const { x, y, w, h } = currentRegion;
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(250,204,21,0.18)'; ctx.fillRect(x, y, w, h);
+      ctx.setLineDash([]);
+    }
+  } else {
+    // Full image view (first pad selection)
+    ctx.drawImage(imgElement, 0, 0, canvasDisplayW, canvasDisplayH);
+
+    // Draw current drag selection
+    if (currentRegion) {
+      const { x, y, w, h } = currentRegion;
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(250,204,21,0.18)'; ctx.fillRect(x, y, w, h);
+      ctx.setLineDash([]);
+    }
   }
 }
 
@@ -873,14 +919,15 @@ function confirmPad() {
 
   currentPadIndex++;
 
+  // Update zoom to show tight crop around confirmed pads
+  computeZoomRegion();
+
   if (currentPadIndex >= PAD_ORDER.length) {
-    // All pads marked — show analyze button
+    // All pads marked — draw final state then auto-analyze
     document.getElementById('step-mark').style.display = 'none';
-    document.getElementById('analyze-btn').style.display = 'block';
-    // Final canvas state
     redrawCanvas();
-    previewWrap.style.display = 'block';
-    document.getElementById('step-upload').style.display = 'none';
+    // Brief pause so user sees last confirmed pad, then analyze
+    setTimeout(() => analyzeStrip(), 450);
   } else {
     updateMarkUI();
   }
@@ -1248,7 +1295,7 @@ window.addEventListener('load', () => {
 <div class="app-footer">
   <div class="footer-version">
     <span class="footer-dot" id="footer-dot"></span>
-    PoolCheck &nbsp;·&nbsp; <span class="app-version">v6</span>
+    PoolCheck &nbsp;·&nbsp; <span class="app-version">v7</span>
   </div>
   <button class="footer-update-btn" id="footer-update-btn" onclick="applyUpdate()">⬆ Update App</button>
 </div>
