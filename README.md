@@ -101,3 +101,11 @@ When a new version is deployed, the app detects it in the background and shows a
 ### v8
 - **Strip region selection**: new first step prompts user to draw a box around the entire test strip before pad marking begins — the canvas then crops and zooms to just the strip, eliminating all background before any pad is selected
 - **Update notification moved**: update available banner repositioned to bottom-left of screen so it no longer overlaps the Update App footer button
+
+### v8 (rebuild)
+- Complete clean rebuild from scratch — eliminated accumulated patching bugs
+- **Strip region selection**: new dedicated step prompts user to draw a box around the entire test strip first; canvas then crops and zooms to just the strip before pad marking begins
+- **Auto-analyze**: after the last pad is marked the analysis runs automatically with no extra button press
+- **Update notification**: moved to bottom-left, compact size, no longer overlaps the Update App footer button
+- Responsive layout with `clamp()` sizing throughout; fixed bottom tab bar with dynamic height measurement via CSS variable
+- Shared drag engine (`attachDrag`) used consistently for both strip selection and pad marking
