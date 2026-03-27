@@ -1,4 +1,4 @@
-const CACHE = 'poolcheck-v7';
+const CACHE = 'poolcheck-v8';
 const ASSETS = ['/', '/index.html', '/manifest.json',
   '/icons/icon-192x192.png', '/icons/icon-512x512.png'];
 

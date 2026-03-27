@@ -97,3 +97,7 @@ When a new version is deployed, the app detects it in the background and shows a
 - 4-pad marking wizard with drag-to-select regions
 - Confidence bar per reading
 - Recommendations generated from results
+
+### v8
+- **Strip region selection**: new first step prompts user to draw a box around the entire test strip before pad marking begins — the canvas then crops and zooms to just the strip, eliminating all background before any pad is selected
+- **Update notification moved**: update available banner repositioned to bottom-left of screen so it no longer overlaps the Update App footer button
