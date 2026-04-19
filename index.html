@@ -157,7 +157,14 @@ body::after {
   position:relative; border-radius:14px; overflow:hidden;
   margin-bottom:10px; cursor:crosshair; touch-action:none; background:#000;
 }
-.canvas-wrap canvas { display:block; width:100%; border-radius:14px; }
+.canvas-wrap canvas {
+  display:block;
+  width:100%;
+  /* Never taller than the available space between header+instruction and tab bar */
+  max-height: var(--canvas-max-h, 55vh);
+  object-fit:contain;
+  border-radius:14px;
+}
 .change-btn {
   position:absolute; top:8px; right:8px;
   background:rgba(0,0,0,0.6); color:white; border:none;
@@ -431,10 +438,10 @@ body::after {
 
         <!-- STEP 3: Mark individual pads -->
         <div id="step-pads" style="display:none">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(17px,4.5vw,21px);letter-spacing:1.5px;color:var(--deep);margin-bottom:8px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(15px,4vw,19px);letter-spacing:1.5px;color:var(--deep);margin-bottom:6px;">
             📍 Mark the <span id="current-pad-name">pH</span> Pad
           </div>
-          <div class="instr-row">
+          <div class="instr-row" style="margin-bottom:8px;padding:8px 12px;">
             <span class="instr-icon">👆</span>
             <span id="pad-instruction">Drag a box around the pH pad</span>
           </div>
@@ -442,9 +449,9 @@ body::after {
             <canvas id="pad-canvas"></canvas>
             <button class="change-btn" onclick="resetAll()">✕ Start Over</button>
           </div>
-          <div class="step-dots" id="step-dots"></div>
-          <div class="swatch-row" id="swatch-row"></div>
-          <button class="btn-secondary" onclick="resetAll()">↩ Retake Photo</button>
+          <div class="step-dots" id="step-dots" style="margin:8px 0 4px;"></div>
+          <div class="swatch-row" id="swatch-row" style="margin-bottom:6px;"></div>
+          <button class="btn-secondary" style="margin-top:4px;padding:10px;" onclick="resetAll()">↩ Retake Photo</button>
         </div>
 
         <!-- Loading -->
@@ -473,7 +480,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot" id="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v8</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v9</span>
       </div>
       <br>
       <button class="footer-update-btn" id="footer-update-btn" onclick="applyUpdate()">⬆ Update App</button>
@@ -492,7 +499,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v8</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v9</span>
       </div>
     </div>
     </div><!-- /scroll-area -->
@@ -513,7 +520,7 @@ body::after {
 // ═══════════════════════════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 
 // ═══════════════════════════════════════════════════════════════
 //  COLOR SCIENCE
@@ -692,11 +699,16 @@ function showStripSelect() {
   document.getElementById('strip-flash').style.display = 'none';
   stripRegion = null; dragRect = null;
 
-  // Size canvas to fit display (max 800px)
-  const maxW = Math.min(800, window.innerWidth - 32);
-  const scale = Math.min(1, maxW / naturalW);
-  sfCanvas.width  = Math.round(naturalW * scale);
-  sfCanvas.height = Math.round(naturalH * scale);
+  // Size canvas to fit display — constrain both width and height
+  const tabH2  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
+  const maxCanH = Math.max(120, window.innerHeight - 90 - 56 - tabH2 - 40);
+  const maxCanW = Math.min(800, window.innerWidth - 32);
+  const scaleW2 = maxCanW / naturalW;
+  const scaleH2 = maxCanH / naturalH;
+  const scale2  = Math.min(1, scaleW2, scaleH2);
+  sfCanvas.width  = Math.round(naturalW * scale2);
+  sfCanvas.height = Math.round(naturalH * scale2);
+  document.documentElement.style.setProperty('--canvas-max-h', maxCanH + 'px');
   sfCtx.drawImage(imgEl, 0, 0, sfCanvas.width, sfCanvas.height);
 }
 
@@ -741,11 +753,24 @@ function showPadMarking() {
   document.getElementById('step-pads').style.display  = 'block';
   padIndex = 0; padRegions = {}; sampledColors = {}; dragRect = null;
 
-  // Size pad canvas to strip region (max 800px wide)
-  const maxW = Math.min(800, window.innerWidth - 32);
-  const scale = Math.min(1, maxW / stripRegion.w);
+  // Compute available canvas height:
+  // viewport height minus: header (~90px), instr row (~56px), dots (~28px),
+  // swatches (~48px), button (~52px), tab bar, padding (~40px)
+  const tabH   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
+  const reservedH = 90 + 56 + 28 + 48 + 52 + tabH + 40;
+  const maxCanvasH = Math.max(120, window.innerHeight - reservedH);
+  const maxCanvasW = Math.min(800, window.innerWidth - 32);
+
+  // Scale to fit BOTH width and height constraints
+  const scaleW = maxCanvasW / stripRegion.w;
+  const scaleH = maxCanvasH / stripRegion.h;
+  const scale  = Math.min(1, scaleW, scaleH);
+
   padCanvas.width  = Math.round(stripRegion.w * scale);
   padCanvas.height = Math.round(stripRegion.h * scale);
+
+  // Set CSS variable so canvas max-height matches exactly
+  document.documentElement.style.setProperty('--canvas-max-h', maxCanvasH + 'px');
 
   updatePadUI();
 }

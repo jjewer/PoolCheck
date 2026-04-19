@@ -109,3 +109,9 @@ When a new version is deployed, the app detects it in the background and shows a
 - **Update notification**: moved to bottom-left, compact size, no longer overlaps the Update App footer button
 - Responsive layout with `clamp()` sizing throughout; fixed bottom tab bar with dynamic height measurement via CSS variable
 - Shared drag engine (`attachDrag`) used consistently for both strip selection and pad marking
+
+### v9
+- **Canvas fits viewport without scrolling**: strip image is now sized using both width AND height constraints so the entire strip is always visible on screen during pad selection — no scrolling required
+- Canvas `max-height` is calculated dynamically from the actual viewport height minus all UI elements (header, instruction row, progress dots, swatches, button, tab bar)
+- Same height-aware sizing applied to the strip region selection step
+- All confirmed pad markers remain visible on the canvas while selecting remaining pads
