@@ -115,3 +115,9 @@ When a new version is deployed, the app detects it in the background and shows a
 - Canvas `max-height` is calculated dynamically from the actual viewport height minus all UI elements (header, instruction row, progress dots, swatches, button, tab bar)
 - Same height-aware sizing applied to the strip region selection step
 - All confirmed pad markers remain visible on the canvas while selecting remaining pads
+
+### v10
+- **Orientation instruction**: new card shown before taking a photo with a visual diagram showing pH pad must be at the top, plus tips for lighting, holding the strip flat, and timing
+- **Auto pad detection**: after selecting the strip region, the app automatically analyses the vertical saturation profile to locate the 4 colour pads using CIELAB-aware pixel scanning
+- **Confirmation step**: detected pads are shown overlaid on the strip image with colour chips for each pad — user taps "✅ Looks Good" to proceed or "✏️ Mark Manually" to fall back to manual selection
+- **Graceful fallback**: if detection fails (poor lighting, angled photo), a clear message explains why and the manual marking flow is offered automatically

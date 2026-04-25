@@ -386,6 +386,93 @@ body::after {
   box-shadow:0 2px 8px rgba(124,58,237,0.3);
 }
 .footer-update-btn.show { display:inline-block; }
+
+  /* ── Orientation instruction card ── */
+  .orient-card {
+    background: linear-gradient(135deg, #0c4a6e, #0369a1);
+    color: white; border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .orient-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+    letter-spacing: 1.5px; margin-bottom: 10px; opacity: 0.95;
+  }
+  .orient-diagram {
+    display: flex; gap: 14px; align-items: center;
+  }
+  .orient-strip {
+    display: flex; flex-direction: column; gap: 3px;
+    flex-shrink: 0;
+  }
+  .orient-pad {
+    width: 52px; height: 22px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .orient-arrow {
+    position: absolute; right: -38px; font-size: 8px;
+    color: #facc15; white-space: nowrap; font-weight: 800;
+  }
+  .orient-tips { flex: 1; }
+  .orient-tip {
+    font-size: 12px; opacity: 0.9; line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .orient-tip strong { color: #facc15; }
+
+  /* ── Auto-detect confirmation step ── */
+  #step-confirm { display: none; }
+
+  .detect-status {
+    font-family: 'Bebas Neue', sans-serif; font-size: clamp(16px,4vw,20px);
+    letter-spacing: 1.5px; color: var(--deep); margin-bottom: 8px;
+  }
+
+  .detect-pads-preview {
+    display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap;
+  }
+
+  .detect-pad-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border-radius: 10px;
+    padding: 6px 10px; font-size: 12px; font-weight: 600;
+    color: var(--deep); border: 1px solid var(--border);
+  }
+
+  .detect-swatch {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0;
+  }
+
+  .detect-btn-row {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+
+  .btn-confirm {
+    flex: 1; padding: 13px;
+    background: linear-gradient(135deg, #065f46, #10b981); color: white;
+    border: none; border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif; font-size: clamp(16px,4vw,20px);
+    letter-spacing: 1.5px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-manual {
+    flex: 1; padding: 13px;
+    background: white; border: 2px solid var(--border); border-radius: 14px;
+    font-family: 'Bebas Neue', sans-serif; font-size: clamp(14px,3.5vw,17px);
+    letter-spacing: 1px; color: var(--muted); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .detect-fail-msg {
+    background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px;
+    padding: 10px 14px; font-size: 13px; color: #92400e;
+    line-height: 1.5; margin-bottom: 10px; display: none;
+  }
+
 </style>
 </head>
 <body>
@@ -415,11 +502,28 @@ body::after {
 
         <!-- STEP 1: Upload photo -->
         <div id="step-upload">
+          <div class="orient-card">
+            <div class="orient-title">📋 Before You Photograph</div>
+            <div class="orient-diagram">
+              <div class="orient-strip">
+                <div class="orient-pad" style="background:#c87050">pH <span class="orient-arrow">← top</span></div>
+                <div class="orient-pad" style="background:#b0a0c8">Free Chlorine</div>
+                <div class="orient-pad" style="background:#6a8860">Alkalinity</div>
+                <div class="orient-pad" style="background:#c09090">Stabilizer</div>
+              </div>
+              <div class="orient-tips">
+                <div class="orient-tip">☝️ <strong>pH pad at top</strong> of image</div>
+                <div class="orient-tip">💡 Bright, even lighting</div>
+                <div class="orient-tip">📐 Hold strip flat &amp; straight</div>
+                <div class="orient-tip">⏱ Within 15 sec of dipping</div>
+              </div>
+            </div>
+          </div>
           <div class="upload-zone">
             <input type="file" accept="image/*" capture="environment" id="file-input">
             <span class="upload-icon">📸</span>
-            <h3>Photograph Your Test Strip</h3>
-            <p>Hold the strip flat in good lighting, strip facing up</p>
+            <h3>Tap to Photograph Strip</h3>
+            <p>pH pad must be at the <strong>top</strong> of the image</p>
           </div>
         </div>
 
@@ -427,13 +531,28 @@ body::after {
         <div id="step-strip" style="display:none">
           <div class="instr-row">
             <span class="instr-icon">✂️</span>
-            <span>Draw a box tightly around your <strong>test strip</strong> to zoom in before marking each pad</span>
+            <span>Draw a box tightly around your <strong>test strip</strong> — pH pad at top</span>
           </div>
           <div class="canvas-wrap" id="strip-wrap">
             <canvas id="strip-full-canvas"></canvas>
             <button class="change-btn" onclick="resetAll()">✕ Start Over</button>
           </div>
-          <div class="confirm-flash" id="strip-flash">✅ Strip selected — zooming in…</div>
+          <div class="confirm-flash" id="strip-flash">✅ Strip selected — detecting pads…</div>
+        </div>
+
+        <!-- STEP 2b: Auto-detect confirmation -->
+        <div id="step-confirm">
+          <div class="detect-status" id="detect-status">🔍 Pads Detected</div>
+          <div class="detect-fail-msg" id="detect-fail-msg"></div>
+          <div class="canvas-wrap" id="confirm-wrap">
+            <canvas id="confirm-canvas"></canvas>
+            <button class="change-btn" onclick="resetAll()">✕ Start Over</button>
+          </div>
+          <div class="detect-pads-preview" id="detect-pads-preview"></div>
+          <div class="detect-btn-row">
+            <button class="btn-confirm" onclick="acceptDetection()">✅ Looks Good</button>
+            <button class="btn-manual" onclick="switchToManual()">✏️ Mark Manually</button>
+          </div>
         </div>
 
         <!-- STEP 3: Mark individual pads -->
@@ -480,7 +599,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot" id="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v9</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v10</span>
       </div>
       <br>
       <button class="footer-update-btn" id="footer-update-btn" onclick="applyUpdate()">⬆ Update App</button>
@@ -499,7 +618,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v9</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v10</span>
       </div>
     </div>
     </div><!-- /scroll-area -->
@@ -520,7 +639,7 @@ body::after {
 // ═══════════════════════════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v10';
 
 // ═══════════════════════════════════════════════════════════════
 //  COLOR SCIENCE
@@ -623,12 +742,17 @@ let dragging = false, dragA = {x:0,y:0}, dragB = {x:0,y:0}, dragRect = null;
 // ═══════════════════════════════════════════════════════════════
 //  CANVAS REFERENCES
 // ═══════════════════════════════════════════════════════════════
-const sfCanvas  = document.getElementById('strip-full-canvas'); // full image for strip select
-const sfCtx     = sfCanvas.getContext('2d', { willReadFrequently:true });
-const padCanvas = document.getElementById('pad-canvas');         // zoomed strip for pad marking
-const padCtx    = padCanvas.getContext('2d', { willReadFrequently:true });
-const offscreen = document.getElementById('offscreen');
-const offCtx    = offscreen.getContext('2d', { willReadFrequently:true });
+const sfCanvas     = document.getElementById('strip-full-canvas');
+const sfCtx        = sfCanvas.getContext('2d', { willReadFrequently:true });
+const padCanvas    = document.getElementById('pad-canvas');
+const padCtx       = padCanvas.getContext('2d', { willReadFrequently:true });
+const confirmCanvas= document.getElementById('confirm-canvas');
+const confirmCtx   = confirmCanvas.getContext('2d', { willReadFrequently:true });
+const offscreen    = document.getElementById('offscreen');
+const offCtx       = offscreen.getContext('2d', { willReadFrequently:true });
+
+// Auto-detected pad regions (strip-relative natural coords)
+let detectedPads = null; // array of {x,y,w,h} or null if detection failed
 
 // ═══════════════════════════════════════════════════════════════
 //  DRAG HELPERS
@@ -726,7 +850,6 @@ function sfDraw() {
 }
 
 function onStripSelected() {
-  // Convert display coords → natural coords
   const sx = naturalW / sfCanvas.width, sy = naturalH / sfCanvas.height;
   stripRegion = {
     x: Math.round(Math.max(0, dragRect.x * sx)),
@@ -737,10 +860,184 @@ function onStripSelected() {
   stripRegion.w = Math.min(stripRegion.w, naturalW - stripRegion.x);
   stripRegion.h = Math.min(stripRegion.h, naturalH - stripRegion.y);
 
-  // Flash confirmation
-  const flash = document.getElementById('strip-flash');
-  flash.style.display = 'block';
-  setTimeout(() => showPadMarking(), 500);
+  document.getElementById('strip-flash').style.display = 'block';
+  setTimeout(() => runPadDetection(), 500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PAD AUTO-DETECTION
+// ═══════════════════════════════════════════════════════════════
+function runPadDetection() {
+  document.getElementById('step-strip').style.display = 'none';
+  document.getElementById('step-confirm').style.display = 'block';
+
+  // Sample strip at reduced resolution for analysis
+  const SAMPLE_W = 60, SAMPLE_H = 300;
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = SAMPLE_W; tmpCanvas.height = SAMPLE_H;
+  const tmpCtx = tmpCanvas.getContext('2d');
+  tmpCtx.drawImage(imgEl,
+    stripRegion.x, stripRegion.y, stripRegion.w, stripRegion.h,
+    0, 0, SAMPLE_W, SAMPLE_H
+  );
+  const imgData = tmpCtx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
+
+  // Build vertical brightness profile — average saturation per row
+  // Pads are colourful (high saturation); dividers are light/white (low saturation)
+  const satProfile = [];
+  for (let row = 0; row < SAMPLE_H; row++) {
+    let totalSat = 0;
+    for (let col = 0; col < SAMPLE_W; col++) {
+      const i = (row * SAMPLE_W + col) * 4;
+      const r = imgData[i]/255, g = imgData[i+1]/255, b = imgData[i+2]/255;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      totalSat += (max - min); // simple saturation proxy
+    }
+    satProfile.push(totalSat / SAMPLE_W);
+  }
+
+  // Smooth the profile with a small window
+  const smoothed = satProfile.map((v,i,a) => {
+    const win = a.slice(Math.max(0,i-3), i+4);
+    return win.reduce((s,x)=>s+x,0)/win.length;
+  });
+
+  // Find the overall saturation threshold — anything above 25% of max is a pad
+  const maxSat = Math.max(...smoothed);
+  const threshold = maxSat * 0.25;
+
+  // Find pad regions as contiguous runs above threshold
+  const regions = [];
+  let inPad = false, padStart = 0;
+  for (let r = 0; r < SAMPLE_H; r++) {
+    if (!inPad && smoothed[r] > threshold) { inPad = true; padStart = r; }
+    else if (inPad && (smoothed[r] <= threshold || r === SAMPLE_H-1)) {
+      inPad = false;
+      const len = r - padStart;
+      if (len > 8) regions.push({ start: padStart, end: r });
+    }
+  }
+
+  // Merge regions that are very close together (gap < 8px)
+  const merged = [];
+  for (const reg of regions) {
+    if (merged.length && reg.start - merged[merged.length-1].end < 8) {
+      merged[merged.length-1].end = reg.end;
+    } else {
+      merged.push({...reg});
+    }
+  }
+
+  // We expect exactly 4 pads — if we got more, pick the 4 largest
+  // if fewer, detection failed
+  let finalRegions = merged.sort((a,b) => (b.end-b.start)-(a.end-a.start)).slice(0,4);
+  finalRegions.sort((a,b) => a.start - b.start); // re-sort top→bottom
+
+  const success = finalRegions.length === 4;
+
+  // Convert SAMPLE coords back to strip-relative natural coords
+  const scaleY = stripRegion.h / SAMPLE_H;
+  const padH_natural = stripRegion.h / 5; // rough pad height estimate
+
+  if (success) {
+    detectedPads = finalRegions.map(reg => ({
+      x: 0,
+      y: Math.round(reg.start * scaleY),
+      w: stripRegion.w,
+      h: Math.round((reg.end - reg.start) * scaleY),
+    }));
+    // Shrink x inward by 5% each side to avoid edge noise
+    detectedPads = detectedPads.map(p => {
+      const inset = Math.round(p.w * 0.05);
+      return { x: inset, y: p.y, w: p.w - inset*2, h: p.h };
+    });
+  } else {
+    detectedPads = null;
+  }
+
+  showDetectionResult(success);
+}
+
+function showDetectionResult(success) {
+  const tabH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
+  const reservedH = 90 + 60 + 80 + 110 + tabH + 20;
+  const maxCanH = Math.max(100, window.innerHeight - reservedH);
+  const maxCanW = Math.min(800, window.innerWidth - 32);
+  const scaleW = maxCanW / stripRegion.w;
+  const scaleH = maxCanH / stripRegion.h;
+  const scale  = Math.min(1, scaleW, scaleH);
+
+  confirmCanvas.width  = Math.round(stripRegion.w * scale);
+  confirmCanvas.height = Math.round(stripRegion.h * scale);
+  document.documentElement.style.setProperty('--canvas-max-h', maxCanH + 'px');
+
+  // Draw strip crop
+  confirmCtx.drawImage(imgEl,
+    stripRegion.x, stripRegion.y, stripRegion.w, stripRegion.h,
+    0, 0, confirmCanvas.width, confirmCanvas.height
+  );
+
+  const statusEl = document.getElementById('detect-status');
+  const failEl   = document.getElementById('detect-fail-msg');
+  const preview  = document.getElementById('detect-pads-preview');
+
+  if (success) {
+    statusEl.textContent = '🎯 4 Pads Detected — Confirm?';
+    failEl.style.display = 'none';
+
+    // Draw detection overlays
+    const colors = ['#ef4444','#a855f7','#10b981','#f59e0b'];
+    detectedPads.forEach((pad, i) => {
+      const dx = pad.x * scale, dy = pad.y * scale;
+      const dw = pad.w * scale, dh = pad.h * scale;
+      confirmCtx.strokeStyle = colors[i]; confirmCtx.lineWidth = 2;
+      confirmCtx.strokeRect(dx, dy, dw, dh);
+      confirmCtx.fillStyle = colors[i].replace(')', ',0.15)').replace('rgb','rgba');
+      confirmCtx.fillRect(dx, dy, dw, dh);
+      // Label
+      confirmCtx.fillStyle = colors[i];
+      confirmCtx.font = 'bold 11px DM Sans,sans-serif';
+      confirmCtx.fillText(PAD_LABELS[PAD_ORDER[i]], dx+4, dy+13);
+    });
+
+    // Colour chips preview
+    preview.innerHTML = PAD_ORDER.map((key, i) => {
+      const pad = detectedPads[i];
+      const c = sampleMedianColor(pad);
+      const hex = rgbToHex(c.r, c.g, c.b);
+      return `<div class="detect-pad-chip">
+        <div class="detect-swatch" style="background:${hex}"></div>
+        ${PAD_EMOJI[key]} ${PAD_LABELS[key]}
+      </div>`;
+    }).join('');
+
+  } else {
+    statusEl.textContent = '⚠️ Could Not Auto-Detect';
+    failEl.style.display = 'block';
+    failEl.textContent = 'Pads could not be automatically identified — this can happen with poor lighting or an angled photo. Please mark each pad manually, or retake the photo.';
+    preview.innerHTML = '';
+    // Hide confirm button, show only manual
+    document.querySelector('.btn-confirm').style.display = 'none';
+  }
+}
+
+function acceptDetection() {
+  // Convert detected pad regions into sampledColors and skip manual marking
+  PAD_ORDER.forEach((key, i) => {
+    padRegions[key]    = detectedPads[i];
+    sampledColors[key] = sampleMedianColor(detectedPads[i]);
+  });
+  document.getElementById('step-confirm').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  setTimeout(() => analyzeStrip(), 300);
+}
+
+function switchToManual() {
+  // Hide confirm step, restore btn-confirm for next time, go to pad marking
+  document.querySelector('.btn-confirm').style.display = '';
+  detectedPads = null;
+  document.getElementById('step-confirm').style.display = 'none';
+  showPadMarking();
 }
 onStripSelected._draw = sfDraw;
 attachDrag(sfCanvas, onStripSelected);
@@ -966,9 +1263,12 @@ function resetAll() {
   imgEl = null; naturalW = 0; naturalH = 0;
   stripRegion = null; padIndex = 0; padRegions = {}; sampledColors = {}; dragRect = null; dragging = false;
 
-  document.getElementById('step-upload').style.display = 'block';
-  document.getElementById('step-strip').style.display  = 'none';
-  document.getElementById('step-pads').style.display   = 'none';
+  document.getElementById('step-upload').style.display  = 'block';
+  document.getElementById('step-strip').style.display   = 'none';
+  document.getElementById('step-confirm').style.display = 'none';
+  document.getElementById('step-pads').style.display    = 'none';
+  document.querySelector('.btn-confirm').style.display  = '';
+  detectedPads = null;
   document.getElementById('loading').style.display     = 'none';
   document.getElementById('results').style.display     = 'none';
   document.getElementById('error-card').style.display  = 'none';
