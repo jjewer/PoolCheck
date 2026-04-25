@@ -121,3 +121,10 @@ When a new version is deployed, the app detects it in the background and shows a
 - **Auto pad detection**: after selecting the strip region, the app automatically analyses the vertical saturation profile to locate the 4 colour pads using CIELAB-aware pixel scanning
 - **Confirmation step**: detected pads are shown overlaid on the strip image with colour chips for each pad — user taps "✅ Looks Good" to proceed or "✏️ Mark Manually" to fall back to manual selection
 - **Graceful fallback**: if detection fails (poor lighting, angled photo), a clear message explains why and the manual marking flow is offered automatically
+
+### v11
+- **🏊 My Pool tab**: new setup screen for pool volume (gallons/litres), pool type (outdoor/indoor, fresh/salt), surface material, and available chemicals — saved locally, used for all dose calculations
+- **💊 Treatment doses**: after every analysis, out-of-range parameters now show exact chemical amounts calculated for your specific pool size (e.g. "Add 285 grams of Sodium Bicarbonate") with product selection based on what chemicals you have available; falls back to qualitative advice if pool size not set
+- **Dose calculation engine**: covers pH (soda ash, dry acid, muriatic acid), Free Chlorine (trichlor, dichlor, cal-hypo, liquid chlorine), Total Alkalinity (sodium bicarbonate, muriatic acid), and Stabilizer (cyanuric acid, partial drain for high)
+- **💾 Backup tab**: export full backup (history + pool settings) as a dated JSON file to device Downloads; restore from any previous backup file; clear all data option
+- If pool size not entered, a tappable warning card in results links directly to the My Pool setup tab

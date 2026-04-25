@@ -473,6 +473,115 @@ body::after {
     line-height: 1.5; margin-bottom: 10px; display: none;
   }
 
+
+  /* ── Page title ── */
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(20px,5vw,26px); letter-spacing:2px;
+    color: var(--deep); margin-bottom:12px;
+  }
+
+  /* ── Form fields ── */
+  .field-group { margin-bottom:16px; }
+  .field-label {
+    display:block; font-size:12px; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.8px;
+    color:var(--muted); margin-bottom:6px;
+  }
+  .field-input {
+    width:100%; padding:12px 14px;
+    border:2px solid var(--border); border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:15px;
+    color:var(--text); background:var(--surface); outline:none;
+    transition:border-color 0.2s; -webkit-appearance:none;
+  }
+  .field-input:focus { border-color:var(--water); }
+  .field-select {
+    padding:12px 14px;
+    border:2px solid var(--border); border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:15px;
+    color:var(--text); background:var(--surface); outline:none;
+    -webkit-appearance:none; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 14px center;
+    padding-right:36px;
+  }
+
+  /* ── Chemical checkboxes ── */
+  .chem-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  }
+  .chem-check {
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; color:var(--text); cursor:pointer;
+    background:var(--surface); border-radius:10px;
+    padding:8px 10px; border:1px solid var(--border);
+    transition:border-color 0.2s;
+  }
+  .chem-check:has(input:checked) { border-color:var(--water); background:#e0f2fe; }
+  .chem-check input { accent-color:var(--water); width:16px; height:16px; }
+
+  /* ── Dose card in results ── */
+  .dose-card {
+    background:white; border-radius:16px; padding:14px 16px;
+    margin-bottom:10px; border-left:4px solid var(--water);
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+    animation:slideUp 0.4s ease both;
+  }
+  .dose-param { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:4px; }
+  .dose-action { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .dose-amount {
+    font-family:'Bebas Neue',sans-serif; font-size:clamp(22px,5.5vw,28px);
+    color:var(--deep); letter-spacing:1px;
+  }
+  .dose-unit { font-size:13px; color:var(--muted); margin-left:4px; font-family:'DM Sans',sans-serif; }
+  .dose-note { font-size:12px; color:var(--muted); margin-top:4px; line-height:1.4; }
+  .dose-card.status-low  { border-left-color:#f59e0b; }
+  .dose-card.status-high { border-left-color:#ef4444; }
+
+  .dose-section-title {
+    font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,4.5vw,22px);
+    letter-spacing:2px; color:var(--deep); margin:16px 0 10px; padding:0 4px;
+  }
+
+  .no-pool-warning {
+    background:#fef3c7; border:1px solid #fde68a; border-radius:14px;
+    padding:12px 14px; font-size:13px; color:#92400e; line-height:1.5;
+    margin-bottom:12px; cursor:pointer;
+  }
+  .no-pool-warning strong { display:block; margin-bottom:2px; }
+
+  /* ── Backup page ── */
+  .backup-section { margin-bottom:4px; }
+  .backup-section-title {
+    font-family:'Bebas Neue',sans-serif; font-size:18px;
+    letter-spacing:1.5px; color:var(--deep); margin-bottom:8px;
+  }
+  .backup-divider {
+    border:none; border-top:1px solid var(--border);
+    margin:18px 0;
+  }
+  .restore-btn {
+    display:inline-block; padding:13px 20px;
+    background:var(--surface); border:2px solid var(--border);
+    border-radius:14px; font-family:'Bebas Neue',sans-serif;
+    font-size:18px; letter-spacing:1.5px; color:var(--deep);
+    cursor:pointer; transition:all 0.2s; width:100%; text-align:center;
+  }
+  .restore-btn:hover { border-color:var(--water); background:#e0f2fe; }
+  .btn-danger {
+    width:100%; padding:13px;
+    background:white; border:2px solid #fecaca; border-radius:14px;
+    font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px;
+    color:#ef4444; cursor:pointer; transition:all 0.2s;
+  }
+  .btn-danger:hover { background:#fef2f2; }
+
+  /* ── Tab nav: 4 tabs need smaller font ── */
+  @media (max-width: 400px) {
+    .tab-btn { font-size: 11px; letter-spacing: 0.5px; padding: 7px 4px; }
+  }
+
 </style>
 </head>
 <body>
@@ -488,10 +597,12 @@ body::after {
 
   <!-- Tab nav (fixed bottom) -->
   <div class="tab-nav">
-    <button class="tab-btn active" id="tab-analyze" onclick="showTab('analyze')">📸 Analyze</button>
+    <button class="tab-btn active" id="tab-analyze"  onclick="showTab('analyze')">📸 Analyze</button>
     <button class="tab-btn" id="tab-history" onclick="showTab('history')">
       📋 History <span class="hc" id="history-count">0</span>
     </button>
+    <button class="tab-btn" id="tab-pool"    onclick="showTab('pool')">🏊 My Pool</button>
+    <button class="tab-btn" id="tab-backup"  onclick="showTab('backup')">💾 Backup</button>
   </div>
 
   <!-- ═══ ANALYZE PAGE ═══ -->
@@ -587,9 +698,10 @@ body::after {
         <div class="results-header">Your Results</div>
         <div id="params-container"></div>
         <div class="advice-card">
-          <h3>💡 Recommendations</h3>
+          <h3>💡 Summary</h3>
           <p id="advice-text"></p>
         </div>
+        <div id="doses-container"></div>
         <button class="btn-secondary" onclick="resetAll()" style="animation:slideUp 0.4s 0.25s ease both;">🔄 Test Again</button>
       </div>
 
@@ -599,7 +711,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot" id="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v10</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
       </div>
       <br>
       <button class="footer-update-btn" id="footer-update-btn" onclick="applyUpdate()">⬆ Update App</button>
@@ -618,11 +730,141 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v10</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
       </div>
     </div>
     </div><!-- /scroll-area -->
   </div><!-- /page-history -->
+
+  <!-- ═══ POOL SETUP PAGE ═══ -->
+  <div class="page" id="page-pool">
+    <div class="scroll-area">
+    <div class="main">
+
+      <div class="card">
+        <div class="page-title">🏊 My Pool Setup</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          Enter your pool details once. PoolCheck uses this to calculate exact chemical doses whenever a reading is out of range.
+        </p>
+
+        <div class="field-group">
+          <label class="field-label">Pool Volume</label>
+          <div style="display:flex;gap:8px;">
+            <input class="field-input" type="number" id="pool-volume" placeholder="e.g. 15000" min="100" max="200000">
+            <select class="field-select" id="pool-unit">
+              <option value="gallons">Gallons</option>
+              <option value="litres">Litres</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Pool Type</label>
+          <select class="field-select" id="pool-type" style="width:100%">
+            <option value="outdoor_fresh">Outdoor — Freshwater</option>
+            <option value="outdoor_salt">Outdoor — Saltwater</option>
+            <option value="indoor_fresh">Indoor — Freshwater</option>
+            <option value="indoor_salt">Indoor — Saltwater</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Pool Surface</label>
+          <select class="field-select" id="pool-surface" style="width:100%">
+            <option value="vinyl">Vinyl Liner</option>
+            <option value="fiberglass">Fiberglass</option>
+            <option value="concrete">Concrete / Plaster</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Available Chemicals <span style="font-size:11px;color:var(--muted);font-weight:400">(check all you have)</span></label>
+          <div class="chem-grid">
+            <label class="chem-check"><input type="checkbox" id="chem-trichlor" value="trichlor"> Trichlor tabs / pucks</label>
+            <label class="chem-check"><input type="checkbox" id="chem-dichlor" value="dichlor"> Dichlor granules</label>
+            <label class="chem-check"><input type="checkbox" id="chem-cal-hypo" value="cal-hypo"> Calcium Hypochlorite</label>
+            <label class="chem-check"><input type="checkbox" id="chem-liquid-cl" value="liquid-cl"> Liquid Chlorine (bleach)</label>
+            <label class="chem-check"><input type="checkbox" id="chem-soda-ash" value="soda-ash"> Soda Ash (pH up)</label>
+            <label class="chem-check"><input type="checkbox" id="chem-dry-acid" value="dry-acid"> Dry Acid / pH Down</label>
+            <label class="chem-check"><input type="checkbox" id="chem-bicarb" value="bicarb"> Sodium Bicarbonate (Alk up)</label>
+            <label class="chem-check"><input type="checkbox" id="chem-muriatic" value="muriatic"> Muriatic Acid (Alk down)</label>
+            <label class="chem-check"><input type="checkbox" id="chem-cya" value="cya"> Cyanuric Acid (Stabilizer)</label>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="savePoolSettings()" style="margin-top:8px;">💾 Save Pool Settings</button>
+        <div id="pool-saved-msg" style="display:none;margin-top:10px;background:#d1fae5;color:#065f46;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;">
+          ✅ Pool settings saved!
+        </div>
+      </div>
+
+      <div class="app-footer">
+        <div class="footer-version">
+          <span class="footer-dot"></span>
+          PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div><!-- /page-pool -->
+
+  <!-- ═══ BACKUP PAGE ═══ -->
+  <div class="page" id="page-backup">
+    <div class="scroll-area">
+    <div class="main">
+
+      <div class="card">
+        <div class="page-title">💾 Backup &amp; Restore</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          Save all your test history and pool settings to a file in your Downloads folder. Restore from a previously saved backup at any time.
+        </p>
+
+        <div class="backup-section">
+          <div class="backup-section-title">📤 Export Backup</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+            Downloads a <code>poolcheck-backup.json</code> file containing your full test history and pool settings.
+          </p>
+          <button class="btn-primary" onclick="exportBackup()">⬇ Download Backup File</button>
+          <div id="export-status" style="display:none;margin-top:10px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;"></div>
+        </div>
+
+        <div class="backup-divider"></div>
+
+        <div class="backup-section">
+          <div class="backup-section-title">📥 Restore Backup</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+            Select a <code>poolcheck-backup.json</code> file to restore your data. <strong>This will overwrite your current history and settings.</strong>
+          </p>
+          <label class="restore-btn">
+            📂 Choose Backup File
+            <input type="file" accept=".json,application/json" id="restore-input" style="display:none" onchange="importBackup(this)">
+          </label>
+          <div id="restore-status" style="display:none;margin-top:10px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;"></div>
+        </div>
+
+        <div class="backup-divider"></div>
+
+        <div class="backup-section">
+          <div class="backup-section-title">⚠️ Clear All Data</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+            Permanently delete all test history and pool settings from this device. Export a backup first!
+          </p>
+          <button class="btn-danger" onclick="clearAllData()">🗑 Clear All Data</button>
+        </div>
+      </div>
+
+      <div class="app-footer">
+        <div class="footer-version">
+          <span class="footer-dot"></span>
+          PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div><!-- /page-backup -->
+
+
 
 </div><!-- /app-body -->
 
@@ -639,7 +881,7 @@ body::after {
 // ═══════════════════════════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 
 // ═══════════════════════════════════════════════════════════════
 //  COLOR SCIENCE
@@ -724,6 +966,293 @@ const PAD_UNITS  = { ph:'', chlorine:' ppm', alkalinity:' ppm', stabilizer:' ppm
 const PAD_RANGES = { ph:'OK: 7.2–7.8', chlorine:'Pool OK: 1–3 ppm', alkalinity:'OK: 80–120 ppm', stabilizer:'Ideal: 30–50 ppm' };
 const STATUS_LABELS = { ok:'OK', low:'LOW', high:'HIGH', unknown:'?' };
 const HISTORY_KEY = 'poolcheck-v2-history';
+const POOL_KEY    = 'poolcheck-pool-settings';
+
+// ═══════════════════════════════════════════════════════════════
+//  POOL SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function loadPoolSettings() {
+  try { return JSON.parse(localStorage.getItem(POOL_KEY) || 'null'); } catch { return null; }
+}
+
+function savePoolSettings() {
+  const vol  = parseFloat(document.getElementById('pool-volume').value);
+  const unit = document.getElementById('pool-unit').value;
+  const type = document.getElementById('pool-type').value;
+  const surf = document.getElementById('pool-surface').value;
+
+  if (!vol || vol < 100) {
+    alert('Please enter a valid pool volume.');
+    return;
+  }
+
+  const chems = ['trichlor','dichlor','cal-hypo','liquid-cl','soda-ash','dry-acid','bicarb','muriatic','cya']
+    .filter(id => document.getElementById('chem-' + id).checked);
+
+  const settings = { vol, unit, type, surf, chems };
+  localStorage.setItem(POOL_KEY, JSON.stringify(settings));
+
+  const msg = document.getElementById('pool-saved-msg');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 2500);
+}
+
+function populatePoolForm() {
+  const s = loadPoolSettings();
+  if (!s) return;
+  document.getElementById('pool-volume').value  = s.vol  || '';
+  document.getElementById('pool-unit').value    = s.unit || 'gallons';
+  document.getElementById('pool-type').value    = s.type || 'outdoor_fresh';
+  document.getElementById('pool-surface').value = s.surf || 'vinyl';
+  (s.chems || []).forEach(id => {
+    const el = document.getElementById('chem-' + id);
+    if (el) el.checked = true;
+  });
+}
+
+// Convert pool volume to litres (all dose calcs use litres internally)
+function getPoolLitres() {
+  const s = loadPoolSettings();
+  if (!s) return null;
+  return s.unit === 'gallons' ? s.vol * 3.78541 : s.vol;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DOSE CALCULATION ENGINE
+// ═══════════════════════════════════════════════════════════════
+// All dose rates are grams per 10,000 litres to move parameter by 1 unit
+// Sources: standard pool chemistry tables
+
+const DOSE_RATES = {
+  ph: {
+    low: {
+      // Raise pH: soda ash (sodium carbonate) ~170g / 10kL per 0.1 pH unit
+      products: [
+        { chem:'soda-ash',  name:'Soda Ash (Sodium Carbonate)', gPer10kLPer01: 170 },
+        { chem:'bicarb',    name:'Sodium Bicarbonate',          gPer10kLPer01: 140, note:'Raises pH gently, also raises alkalinity' },
+      ],
+      fallback: { name:'Soda Ash (Sodium Carbonate)', gPer10kLPer01: 170 }
+    },
+    high: {
+      // Lower pH: dry acid ~80g / 10kL per 0.1 pH unit
+      products: [
+        { chem:'dry-acid',  name:'Dry Acid (Sodium Bisulphate)', gPer10kLPer01: 80 },
+        { chem:'muriatic',  name:'Muriatic Acid', mlPer10kLPer01: 60, isLiquid: true },
+      ],
+      fallback: { name:'Dry Acid (Sodium Bisulphate)', gPer10kLPer01: 80 }
+    }
+  },
+  chlorine: {
+    low: {
+      products: [
+        { chem:'trichlor',  name:'Trichlor tabs',         gPer10kLPer1ppm: 22,  note:'For ongoing maintenance. For quick boost use shock.' },
+        { chem:'dichlor',   name:'Dichlor granules',      gPer10kLPer1ppm: 18,  note:'Fast dissolving, good for quick raise.' },
+        { chem:'cal-hypo',  name:'Calcium Hypochlorite',  gPer10kLPer1ppm: 15,  note:'Check calcium hardness if using frequently.' },
+        { chem:'liquid-cl', name:'Liquid Chlorine (12%)', mlPer10kLPer1ppm: 83, isLiquid: true },
+      ],
+      fallback: { name:'Granular Chlorine (Dichlor)', gPer10kLPer1ppm: 18 }
+    },
+    high: { noProduct: true, advice: 'Do not add chlorine. Stop using the pool until levels drop naturally. Sunlight accelerates breakdown — remove the cover if safe to do so.' }
+  },
+  alkalinity: {
+    low: {
+      products: [
+        { chem:'bicarb', name:'Sodium Bicarbonate (Baking Soda)', gPer10kLPer10ppm: 140 },
+      ],
+      fallback: { name:'Sodium Bicarbonate', gPer10kLPer10ppm: 140 }
+    },
+    high: {
+      products: [
+        { chem:'muriatic', name:'Muriatic Acid', mlPer10kLPer10ppm: 130, isLiquid: true, note:'Add slowly to deep end with pump running.' },
+        { chem:'dry-acid', name:'Dry Acid',      gPer10kLPer10ppm: 100, note:'Safer alternative to muriatic acid.' },
+      ],
+      fallback: { name:'Muriatic Acid', mlPer10kLPer10ppm: 130, isLiquid: true }
+    }
+  },
+  stabilizer: {
+    low: {
+      products: [
+        { chem:'cya', name:'Cyanuric Acid (Stabilizer)', gPer10kLPer10ppm: 130, note:'Dissolve in warm water first. Takes 24–48h to register.' },
+      ],
+      fallback: { name:'Cyanuric Acid', gPer10kLPer10ppm: 130 }
+    },
+    high: { noProduct: true, advice: 'No chemical can lower stabilizer — you must partially drain and refill the pool.' }
+  }
+};
+
+const OK_RANGES = {
+  ph:         { low:7.2, high:7.8, target:7.4, unit:'' },
+  chlorine:   { low:1,   high:3,   target:2,   unit:' ppm' },
+  alkalinity: { low:80,  high:120, target:100, unit:' ppm' },
+  stabilizer: { low:30,  high:50,  target:40,  unit:' ppm' },
+};
+
+function parseMidValue(valStr) {
+  // Handle ranges like "30-50" → 40
+  if (!valStr || valStr === '—') return null;
+  if (valStr.includes('-')) {
+    const parts = valStr.split('-').map(Number);
+    return (parts[0] + parts[1]) / 2;
+  }
+  return parseFloat(valStr);
+}
+
+function calcDoses(results) {
+  const poolLitres = getPoolLitres();
+  const settings   = loadPoolSettings();
+  const doses = [];
+
+  PAD_ORDER.forEach(key => {
+    const r = results[key];
+    if (!r || r.status === 'ok' || r.status === 'unknown') return;
+
+    const range    = OK_RANGES[key];
+    const measured = parseMidValue(r.value);
+    if (measured === null) return;
+
+    const direction = r.status; // 'low' or 'high'
+    const rateInfo  = DOSE_RATES[key]?.[direction];
+    if (!rateInfo) return;
+
+    if (rateInfo.noProduct) {
+      doses.push({ key, direction, noProduct: true, advice: rateInfo.advice });
+      return;
+    }
+
+    // Pick best available product from user's chemical list
+    let product = rateInfo.fallback;
+    if (settings?.chems?.length) {
+      const match = rateInfo.products?.find(p => settings.chems.includes(p.chem));
+      if (match) product = match;
+    }
+
+    let doseText = '', doseUnit = '', doseNote = product.note || '';
+
+    if (poolLitres) {
+      const scaleFactor = poolLitres / 10000;
+
+      if (key === 'ph') {
+        const delta = direction === 'low'
+          ? Math.abs(range.target - measured) / 0.1
+          : Math.abs(measured - range.target) / 0.1;
+        if (product.isLiquid) {
+          const ml = Math.round((product.mlPer10kLPer01 || 60) * scaleFactor * delta);
+          doseText = ml >= 1000 ? (ml/1000).toFixed(1) : ml.toString();
+          doseUnit = ml >= 1000 ? 'litres' : 'ml';
+        } else {
+          const g = Math.round((product.gPer10kLPer01 || 170) * scaleFactor * delta);
+          doseText = g >= 1000 ? (g/1000).toFixed(1) : g.toString();
+          doseUnit = g >= 1000 ? 'kg' : 'grams';
+        }
+      } else if (key === 'chlorine') {
+        const delta = direction === 'low' ? Math.max(1, range.target - measured) : 0;
+        if (product.isLiquid) {
+          const ml = Math.round((product.mlPer10kLPer1ppm || 83) * scaleFactor * delta);
+          doseText = ml >= 1000 ? (ml/1000).toFixed(1) : ml.toString();
+          doseUnit = ml >= 1000 ? 'litres' : 'ml';
+        } else {
+          const g = Math.round((product.gPer10kLPer1ppm || 18) * scaleFactor * delta);
+          doseText = g >= 1000 ? (g/1000).toFixed(1) : g.toString();
+          doseUnit = g >= 1000 ? 'kg' : 'grams';
+        }
+      } else if (key === 'alkalinity') {
+        const delta = direction === 'low'
+          ? Math.max(10, range.target - measured) / 10
+          : Math.max(10, measured - range.target) / 10;
+        if (product.isLiquid) {
+          const ml = Math.round((product.mlPer10kLPer10ppm || 130) * scaleFactor * delta);
+          doseText = ml >= 1000 ? (ml/1000).toFixed(1) : ml.toString();
+          doseUnit = ml >= 1000 ? 'litres' : 'ml';
+        } else {
+          const g = Math.round((product.gPer10kLPer10ppm || 140) * scaleFactor * delta);
+          doseText = g >= 1000 ? (g/1000).toFixed(1) : g.toString();
+          doseUnit = g >= 1000 ? 'kg' : 'grams';
+        }
+      } else if (key === 'stabilizer') {
+        const delta = direction === 'low'
+          ? Math.max(10, range.target - measured) / 10 : 0;
+        const g = Math.round((product.gPer10kLPer10ppm || 130) * scaleFactor * delta);
+        doseText = g >= 1000 ? (g/1000).toFixed(1) : g.toString();
+        doseUnit = g >= 1000 ? 'kg' : 'grams';
+        if (direction === 'high') {
+          const drainPct = Math.round(((measured - range.high) / measured) * 100);
+          doseText = drainPct.toString(); doseUnit = '% drain & refill';
+        }
+      }
+
+      doses.push({ key, direction, product: product.name, doseText, doseUnit, doseNote, noProduct: false });
+    } else {
+      // No pool size — give qualitative advice
+      doses.push({ key, direction, product: product.name, doseText: null, doseUnit: '', doseNote, noProduct: false });
+    }
+  });
+  return doses;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BACKUP & RESTORE
+// ═══════════════════════════════════════════════════════════════
+function exportBackup() {
+  const backup = {
+    version: APP_VERSION,
+    exported: new Date().toISOString(),
+    history: loadHistory(),
+    pool: loadPoolSettings()
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = `poolcheck-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showStatus('export-status', '✅ Backup downloaded to your Downloads folder!', '#d1fae5', '#065f46');
+}
+
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.history && !backup.pool) throw new Error('Invalid backup file');
+      if (!confirm(`Restore backup from ${backup.exported ? new Date(backup.exported).toLocaleDateString() : 'unknown date'}?\n\nThis will overwrite your current history and pool settings.`)) return;
+      if (backup.history) saveHistory(backup.history);
+      if (backup.pool)    localStorage.setItem(POOL_KEY, JSON.stringify(backup.pool));
+      updateHistoryCount();
+      populatePoolForm();
+      showStatus('restore-status', `✅ Restored ${(backup.history||[]).length} test records and pool settings.`, '#d1fae5', '#065f46');
+    } catch(err) {
+      showStatus('restore-status', '❌ Invalid backup file — could not restore.', '#fee2e2', '#991b1b');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('Clear ALL data?\n\nThis deletes your entire test history and pool settings from this device. This cannot be undone.\n\nExport a backup first!')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(POOL_KEY);
+  updateHistoryCount();
+  showStatus('export-status', '🗑 All data cleared.', '#fef3c7', '#92400e');
+}
+
+function showStatus(id, msg, bg, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display     = 'block';
+  el.style.background  = bg;
+  el.style.color       = color;
+  el.textContent       = msg;
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  STATE
@@ -1251,6 +1780,46 @@ function displayResults(results) {
     ? adviceParts.join(' ')
     : 'All levels look good! Your pool water is well balanced.';
 
+  // Dose recommendations
+  const dosesContainer = document.getElementById('doses-container');
+  const doses = calcDoses(results);
+  const poolSettings = loadPoolSettings();
+
+  if (doses.length > 0) {
+    let html = '<div class="dose-section-title">💊 Treatment Doses</div>';
+
+    if (!poolSettings) {
+      html += `<div class="no-pool-warning" onclick="showTab('pool')">
+        <strong>⚠️ Pool size not set</strong>
+        Tap here to enter your pool details for exact chemical doses.
+      </div>`;
+    }
+
+    doses.forEach((d, i) => {
+      const dirLabel = d.direction === 'low' ? '⬆ Raise' : '⬇ Lower';
+      html += `<div class="dose-card status-${d.direction}" style="animation-delay:${0.1 + i*0.05}s">
+        <div class="dose-param">${PAD_EMOJI[d.key]} ${PAD_LABELS[d.key]}</div>`;
+
+      if (d.noProduct) {
+        html += `<div class="dose-action">${dirLabel} ${PAD_LABELS[d.key]}</div>
+          <div class="dose-note">${d.advice}</div>`;
+      } else if (d.doseText) {
+        html += `<div class="dose-action">${dirLabel} using <strong>${d.product}</strong></div>
+          <div><span class="dose-amount">Add ${d.doseText}</span><span class="dose-unit">${d.doseUnit}</span></div>`;
+        if (d.doseNote) html += `<div class="dose-note">ℹ️ ${d.doseNote}</div>`;
+      } else {
+        html += `<div class="dose-action">${dirLabel} using <strong>${d.product}</strong></div>
+          <div class="dose-note">Enter your pool size in <em>My Pool</em> tab for exact dosage.`;
+        if (d.doseNote) html += ` ℹ️ ${d.doseNote}`;
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    dosesContainer.innerHTML = html;
+  } else {
+    dosesContainer.innerHTML = '';
+  }
+
   document.getElementById('results').style.display = 'block';
   setTimeout(() => document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' }), 100);
 }
@@ -1273,6 +1842,7 @@ function resetAll() {
   document.getElementById('results').style.display     = 'none';
   document.getElementById('error-card').style.display  = 'none';
   document.getElementById('params-container').innerHTML = '';
+  const dc = document.getElementById('doses-container'); if(dc) dc.innerHTML = '';
   document.getElementById('file-input').value = '';
   document.getElementById('swatch-row').innerHTML = '';
   document.getElementById('strip-flash').style.display = 'none';
@@ -1284,9 +1854,10 @@ function resetAll() {
 function showTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-'   + tab).classList.add('active');
-  document.getElementById('tab-'    + tab).classList.add('active');
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('tab-'  + tab).classList.add('active');
   if (tab === 'history') renderHistory();
+  if (tab === 'pool')    populatePoolForm();
 }
 
 // ═══════════════════════════════════════════════════════════════
