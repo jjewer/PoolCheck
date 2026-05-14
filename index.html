@@ -638,20 +638,7 @@ body::after {
           </div>
         </div>
 
-        <!-- STEP 2: Draw box around entire strip -->
-        <div id="step-strip" style="display:none">
-          <div class="instr-row">
-            <span class="instr-icon">✂️</span>
-            <span>Draw a box tightly around your <strong>test strip</strong> — pH pad at top</span>
-          </div>
-          <div class="canvas-wrap" id="strip-wrap">
-            <canvas id="strip-full-canvas"></canvas>
-            <button class="change-btn" onclick="resetAll()">✕ Start Over</button>
-          </div>
-          <div class="confirm-flash" id="strip-flash">✅ Strip selected — detecting pads…</div>
-        </div>
-
-        <!-- STEP 2b: Auto-detect confirmation -->
+        <!-- STEP 2: Auto-detect confirmation -->
         <div id="step-confirm">
           <div class="detect-status" id="detect-status">🔍 Pads Detected</div>
           <div class="detect-fail-msg" id="detect-fail-msg"></div>
@@ -711,7 +698,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot" id="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v12</span>
       </div>
       <br>
       <button class="footer-update-btn" id="footer-update-btn" onclick="applyUpdate()">⬆ Update App</button>
@@ -730,7 +717,7 @@ body::after {
     <div class="app-footer">
       <div class="footer-version">
         <span class="footer-dot"></span>
-        PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+        PoolCheck &nbsp;·&nbsp; <span class="app-version">v12</span>
       </div>
     </div>
     </div><!-- /scroll-area -->
@@ -802,7 +789,7 @@ body::after {
       <div class="app-footer">
         <div class="footer-version">
           <span class="footer-dot"></span>
-          PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+          PoolCheck &nbsp;·&nbsp; <span class="app-version">v12</span>
         </div>
       </div>
     </div>
@@ -857,7 +844,7 @@ body::after {
       <div class="app-footer">
         <div class="footer-version">
           <span class="footer-dot"></span>
-          PoolCheck &nbsp;·&nbsp; <span class="app-version">v11</span>
+          PoolCheck &nbsp;·&nbsp; <span class="app-version">v12</span>
         </div>
       </div>
     </div>
@@ -881,7 +868,7 @@ body::after {
 // ═══════════════════════════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════════════════════════
-const APP_VERSION = 'v11';
+const APP_VERSION = 'v12';
 
 // ═══════════════════════════════════════════════════════════════
 //  COLOR SCIENCE
@@ -1259,10 +1246,10 @@ function showStatus(id, msg, bg, color) {
 // ═══════════════════════════════════════════════════════════════
 let imgEl = null;
 let naturalW = 0, naturalH = 0;
-let stripRegion = null;   // {x,y,w,h} in natural px — the user-selected strip crop
+let stripRegion = null;   // {x,y,w,h} in natural px — always set to full image
 
 let padIndex = 0;
-let padRegions = {};      // natural coords RELATIVE TO stripRegion origin
+let padRegions = {};      // natural image coords
 let sampledColors = {};
 
 // Drag state (shared)
@@ -1271,8 +1258,6 @@ let dragging = false, dragA = {x:0,y:0}, dragB = {x:0,y:0}, dragRect = null;
 // ═══════════════════════════════════════════════════════════════
 //  CANVAS REFERENCES
 // ═══════════════════════════════════════════════════════════════
-const sfCanvas     = document.getElementById('strip-full-canvas');
-const sfCtx        = sfCanvas.getContext('2d', { willReadFrequently:true });
 const padCanvas    = document.getElementById('pad-canvas');
 const padCtx       = padCanvas.getContext('2d', { willReadFrequently:true });
 const confirmCanvas= document.getElementById('confirm-canvas');
@@ -1338,148 +1323,131 @@ document.getElementById('file-input').addEventListener('change', e => {
     offscreen.width = naturalW; offscreen.height = naturalH;
     offCtx.drawImage(imgEl, 0, 0);
     URL.revokeObjectURL(url);
-    showStripSelect();
+    // Set stripRegion to full image — used by sampling functions
+    stripRegion = { x: 0, y: 0, w: naturalW, h: naturalH };
+    document.getElementById('step-upload').style.display = 'none';
+    document.getElementById('step-confirm').style.display = 'block';
+    document.getElementById('detect-status').textContent = '🔍 Detecting pads…';
+    document.getElementById('detect-fail-msg').style.display = 'none';
+    document.getElementById('detect-pads-preview').innerHTML = '';
+    document.querySelector('.btn-confirm').style.display = '';
+    setTimeout(() => runPadDetection(), 100);
   };
   imgEl.src = url;
 });
 
 // ═══════════════════════════════════════════════════════════════
-//  STEP 2 — SELECT STRIP REGION
-// ═══════════════════════════════════════════════════════════════
-function showStripSelect() {
-  document.getElementById('step-upload').style.display = 'none';
-  document.getElementById('step-strip').style.display  = 'block';
-  document.getElementById('strip-flash').style.display = 'none';
-  stripRegion = null; dragRect = null;
-
-  // Size canvas to fit display — constrain both width and height
-  const tabH2  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
-  const maxCanH = Math.max(120, window.innerHeight - 90 - 56 - tabH2 - 40);
-  const maxCanW = Math.min(800, window.innerWidth - 32);
-  const scaleW2 = maxCanW / naturalW;
-  const scaleH2 = maxCanH / naturalH;
-  const scale2  = Math.min(1, scaleW2, scaleH2);
-  sfCanvas.width  = Math.round(naturalW * scale2);
-  sfCanvas.height = Math.round(naturalH * scale2);
-  document.documentElement.style.setProperty('--canvas-max-h', maxCanH + 'px');
-  sfCtx.drawImage(imgEl, 0, 0, sfCanvas.width, sfCanvas.height);
-}
-
-// Draw on sfCanvas
-function sfDraw() {
-  sfCtx.drawImage(imgEl, 0, 0, sfCanvas.width, sfCanvas.height);
-  if (dragRect) {
-    const {x,y,w,h} = dragRect;
-    sfCtx.strokeStyle = '#facc15'; sfCtx.lineWidth = 2;
-    sfCtx.setLineDash([4,3]);
-    sfCtx.strokeRect(x,y,w,h);
-    sfCtx.fillStyle = 'rgba(250,204,21,0.15)'; sfCtx.fillRect(x,y,w,h);
-    sfCtx.setLineDash([]);
-  }
-}
-
-function onStripSelected() {
-  const sx = naturalW / sfCanvas.width, sy = naturalH / sfCanvas.height;
-  stripRegion = {
-    x: Math.round(Math.max(0, dragRect.x * sx)),
-    y: Math.round(Math.max(0, dragRect.y * sy)),
-    w: Math.round(Math.min(dragRect.w * sx, naturalW)),
-    h: Math.round(Math.min(dragRect.h * sy, naturalH)),
-  };
-  stripRegion.w = Math.min(stripRegion.w, naturalW - stripRegion.x);
-  stripRegion.h = Math.min(stripRegion.h, naturalH - stripRegion.y);
-
-  document.getElementById('strip-flash').style.display = 'block';
-  setTimeout(() => runPadDetection(), 500);
-}
-
-// ═══════════════════════════════════════════════════════════════
 //  PAD AUTO-DETECTION
+//  Works on full image — no pre-cropping required.
+//  Strategy:
+//   1. Downsample to 80×400 for speed
+//   2. For each row, compute average colour saturation
+//   3. Find the vertical slice with highest variance — that's the strip
+//   4. Within that slice, find 4 pad regions by saturation peaks
 // ═══════════════════════════════════════════════════════════════
 function runPadDetection() {
-  document.getElementById('step-strip').style.display = 'none';
-  document.getElementById('step-confirm').style.display = 'block';
+  const SAMPLE_W = 80, SAMPLE_H = 400;
+  const tmp = document.createElement('canvas');
+  tmp.width = SAMPLE_W; tmp.height = SAMPLE_H;
+  const tCtx = tmp.getContext('2d');
+  tCtx.drawImage(imgEl, 0, 0, SAMPLE_W, SAMPLE_H);
+  const px = tCtx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
 
-  // Sample strip at reduced resolution for analysis
-  const SAMPLE_W = 60, SAMPLE_H = 300;
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width = SAMPLE_W; tmpCanvas.height = SAMPLE_H;
-  const tmpCtx = tmpCanvas.getContext('2d');
-  tmpCtx.drawImage(imgEl,
-    stripRegion.x, stripRegion.y, stripRegion.w, stripRegion.h,
-    0, 0, SAMPLE_W, SAMPLE_H
-  );
-  const imgData = tmpCtx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
-
-  // Build vertical brightness profile — average saturation per row
-  // Pads are colourful (high saturation); dividers are light/white (low saturation)
-  const satProfile = [];
-  for (let row = 0; row < SAMPLE_H; row++) {
-    let totalSat = 0;
-    for (let col = 0; col < SAMPLE_W; col++) {
-      const i = (row * SAMPLE_W + col) * 4;
-      const r = imgData[i]/255, g = imgData[i+1]/255, b = imgData[i+2]/255;
-      const max = Math.max(r,g,b), min = Math.min(r,g,b);
-      totalSat += (max - min); // simple saturation proxy
+  // Row saturation profile — measure both saturation AND colour variance
+  // to distinguish coloured pads from background
+  function rowMetric(row) {
+    let sat = 0, rSum = 0, gSum = 0, bSum = 0;
+    for (let c = 0; c < SAMPLE_W; c++) {
+      const idx = (row * SAMPLE_W + c) * 4;
+      const r = px[idx]/255, g = px[idx+1]/255, b = px[idx+2]/255;
+      sat += Math.max(r,g,b) - Math.min(r,g,b);
+      rSum += r; gSum += g; bSum += b;
     }
-    satProfile.push(totalSat / SAMPLE_W);
+    // Also measure how much the row differs from pure grey (colorfulness)
+    const rA = rSum/SAMPLE_W, gA = gSum/SAMPLE_W, bA = bSum/SAMPLE_W;
+    const grey = (rA + gA + bA) / 3;
+    const colorfulness = Math.abs(rA-grey) + Math.abs(gA-grey) + Math.abs(bA-grey);
+    return (sat / SAMPLE_W) + colorfulness * 2;
   }
 
-  // Smooth the profile with a small window
-  const smoothed = satProfile.map((v,i,a) => {
-    const win = a.slice(Math.max(0,i-3), i+4);
-    return win.reduce((s,x)=>s+x,0)/win.length;
+  const profile = Array.from({ length: SAMPLE_H }, (_, r) => rowMetric(r));
+
+  // Smooth with wider window (7px) to merge nearby pad regions
+  const smoothed = profile.map((v, i, a) => {
+    const win = a.slice(Math.max(0, i-5), i+6);
+    return win.reduce((s, x) => s + x, 0) / win.length;
   });
 
-  // Find the overall saturation threshold — anything above 25% of max is a pad
-  const maxSat = Math.max(...smoothed);
-  const threshold = maxSat * 0.25;
+  // Adaptive threshold: use mean + 0.3 * stdev
+  const mean = smoothed.reduce((s, v) => s + v, 0) / SAMPLE_H;
+  const stdev = Math.sqrt(smoothed.reduce((s, v) => s + (v - mean)**2, 0) / SAMPLE_H);
+  const threshold = mean + stdev * 0.3;
 
-  // Find pad regions as contiguous runs above threshold
+  // Find contiguous runs above threshold
   const regions = [];
   let inPad = false, padStart = 0;
   for (let r = 0; r < SAMPLE_H; r++) {
-    if (!inPad && smoothed[r] > threshold) { inPad = true; padStart = r; }
-    else if (inPad && (smoothed[r] <= threshold || r === SAMPLE_H-1)) {
+    if (!inPad && smoothed[r] > threshold) {
+      inPad = true; padStart = r;
+    } else if (inPad && (smoothed[r] <= threshold || r === SAMPLE_H - 1)) {
       inPad = false;
-      const len = r - padStart;
-      if (len > 8) regions.push({ start: padStart, end: r });
+      if (r - padStart > 5) regions.push({ start: padStart, end: r });
     }
   }
 
-  // Merge regions that are very close together (gap < 8px)
+  // Merge regions with small gaps (< 12px sample rows)
   const merged = [];
   for (const reg of regions) {
-    if (merged.length && reg.start - merged[merged.length-1].end < 8) {
+    if (merged.length && reg.start - merged[merged.length-1].end < 12) {
       merged[merged.length-1].end = reg.end;
     } else {
-      merged.push({...reg});
+      merged.push({ ...reg });
     }
   }
 
-  // We expect exactly 4 pads — if we got more, pick the 4 largest
-  // if fewer, detection failed
-  let finalRegions = merged.sort((a,b) => (b.end-b.start)-(a.end-a.start)).slice(0,4);
-  finalRegions.sort((a,b) => a.start - b.start); // re-sort top→bottom
+  // Pick best 4: if more than 4 take largest, if fewer try splitting the largest
+  let candidates = merged.sort((a, b) => (b.end - b.start) - (a.end - a.start));
 
+  if (candidates.length < 4 && candidates.length > 0) {
+    // Try lowering threshold by 20% to find more regions
+    const threshold2 = threshold * 0.8;
+    const regions2 = [];
+    let inPad2 = false, start2 = 0;
+    for (let r = 0; r < SAMPLE_H; r++) {
+      if (!inPad2 && smoothed[r] > threshold2) { inPad2 = true; start2 = r; }
+      else if (inPad2 && (smoothed[r] <= threshold2 || r === SAMPLE_H-1)) {
+        inPad2 = false;
+        if (r - start2 > 4) regions2.push({ start: start2, end: r });
+      }
+    }
+    const merged2 = [];
+    for (const reg of regions2) {
+      if (merged2.length && reg.start - merged2[merged2.length-1].end < 8) {
+        merged2[merged2.length-1].end = reg.end;
+      } else { merged2.push({...reg}); }
+    }
+    if (merged2.length >= 4) candidates = merged2.sort((a,b) => (b.end-b.start)-(a.end-a.start));
+  }
+
+  let finalRegions = candidates.slice(0, 4).sort((a, b) => a.start - b.start);
   const success = finalRegions.length === 4;
 
-  // Convert SAMPLE coords back to strip-relative natural coords
-  const scaleY = stripRegion.h / SAMPLE_H;
-  const padH_natural = stripRegion.h / 5; // rough pad height estimate
-
   if (success) {
-    detectedPads = finalRegions.map(reg => ({
-      x: 0,
-      y: Math.round(reg.start * scaleY),
-      w: stripRegion.w,
-      h: Math.round((reg.end - reg.start) * scaleY),
-    }));
-    // Shrink x inward by 5% each side to avoid edge noise
-    detectedPads = detectedPads.map(p => {
-      const inset = Math.round(p.w * 0.05);
-      return { x: inset, y: p.y, w: p.w - inset*2, h: p.h };
+    // Convert sample-space coords → natural image coords
+    const scaleY = naturalH / SAMPLE_H;
+    const scaleX = naturalW / SAMPLE_W;
+
+    detectedPads = finalRegions.map(reg => {
+      // X: use middle 70% of image width to avoid edges
+      const insetX = Math.round(naturalW * 0.15);
+      return {
+        x: insetX,
+        y: Math.round(reg.start * scaleY),
+        w: naturalW - insetX * 2,
+        h: Math.round((reg.end - reg.start) * scaleY),
+      };
     });
+    // stripRegion is full image, so pad coords are already in full image space
   } else {
     detectedPads = null;
   }
@@ -1492,19 +1460,16 @@ function showDetectionResult(success) {
   const reservedH = 90 + 60 + 80 + 110 + tabH + 20;
   const maxCanH = Math.max(100, window.innerHeight - reservedH);
   const maxCanW = Math.min(800, window.innerWidth - 32);
-  const scaleW = maxCanW / stripRegion.w;
-  const scaleH = maxCanH / stripRegion.h;
-  const scale  = Math.min(1, scaleW, scaleH);
+  const scaleW  = maxCanW / naturalW;
+  const scaleH  = maxCanH / naturalH;
+  const scale   = Math.min(1, scaleW, scaleH);
 
-  confirmCanvas.width  = Math.round(stripRegion.w * scale);
-  confirmCanvas.height = Math.round(stripRegion.h * scale);
+  confirmCanvas.width  = Math.round(naturalW * scale);
+  confirmCanvas.height = Math.round(naturalH * scale);
   document.documentElement.style.setProperty('--canvas-max-h', maxCanH + 'px');
 
-  // Draw strip crop
-  confirmCtx.drawImage(imgEl,
-    stripRegion.x, stripRegion.y, stripRegion.w, stripRegion.h,
-    0, 0, confirmCanvas.width, confirmCanvas.height
-  );
+  // Draw full image
+  confirmCtx.drawImage(imgEl, 0, 0, confirmCanvas.width, confirmCanvas.height);
 
   const statusEl = document.getElementById('detect-status');
   const failEl   = document.getElementById('detect-fail-msg');
@@ -1514,25 +1479,37 @@ function showDetectionResult(success) {
     statusEl.textContent = '🎯 4 Pads Detected — Confirm?';
     failEl.style.display = 'none';
 
-    // Draw detection overlays
-    const colors = ['#ef4444','#a855f7','#10b981','#f59e0b'];
+    // Draw detection overlays — hex colors need rgba conversion done properly
+    const colors    = ['#ef4444', '#a855f7', '#10b981', '#f59e0b'];
+    const colorsRGBA = ['rgba(239,68,68,0.25)', 'rgba(168,85,247,0.25)', 'rgba(16,185,129,0.25)', 'rgba(245,158,11,0.25)'];
+
     detectedPads.forEach((pad, i) => {
-      const dx = pad.x * scale, dy = pad.y * scale;
-      const dw = pad.w * scale, dh = pad.h * scale;
-      confirmCtx.strokeStyle = colors[i]; confirmCtx.lineWidth = 2;
-      confirmCtx.strokeRect(dx, dy, dw, dh);
-      confirmCtx.fillStyle = colors[i].replace(')', ',0.15)').replace('rgb','rgba');
+      // pad coords are in natural image space — scale to display canvas
+      const dx = Math.round(pad.x * scale);
+      const dy = Math.round(pad.y * scale);
+      const dw = Math.round(pad.w * scale);
+      const dh = Math.round(pad.h * scale);
+
+      confirmCtx.fillStyle = colorsRGBA[i];
       confirmCtx.fillRect(dx, dy, dw, dh);
-      // Label
+      confirmCtx.strokeStyle = colors[i];
+      confirmCtx.lineWidth = 2;
+      confirmCtx.strokeRect(dx, dy, dw, dh);
+
+      // Label background + text
       confirmCtx.fillStyle = colors[i];
-      confirmCtx.font = 'bold 11px DM Sans,sans-serif';
-      confirmCtx.fillText(PAD_LABELS[PAD_ORDER[i]], dx+4, dy+13);
+      confirmCtx.font = 'bold 12px DM Sans,sans-serif';
+      const label = PAD_LABELS[PAD_ORDER[i]];
+      const tw = confirmCtx.measureText(label).width;
+      confirmCtx.fillRect(dx + 2, dy + 2, tw + 8, 18);
+      confirmCtx.fillStyle = 'white';
+      confirmCtx.fillText(label, dx + 6, dy + 15);
     });
 
-    // Colour chips preview
+    // Colour chips — sample from full-image coords (no stripRegion offset needed)
     preview.innerHTML = PAD_ORDER.map((key, i) => {
       const pad = detectedPads[i];
-      const c = sampleMedianColor(pad);
+      const c   = sampleMedianColor(pad);
       const hex = rgbToHex(c.r, c.g, c.b);
       return `<div class="detect-pad-chip">
         <div class="detect-swatch" style="background:${hex}"></div>
@@ -1543,9 +1520,8 @@ function showDetectionResult(success) {
   } else {
     statusEl.textContent = '⚠️ Could Not Auto-Detect';
     failEl.style.display = 'block';
-    failEl.textContent = 'Pads could not be automatically identified — this can happen with poor lighting or an angled photo. Please mark each pad manually, or retake the photo.';
-    preview.innerHTML = '';
-    // Hide confirm button, show only manual
+    failEl.textContent   = 'Pads could not be automatically identified — this happens with poor lighting, an angled photo, or if the strip is not oriented with pH at the top. Please mark each pad manually, or retake the photo.';
+    preview.innerHTML    = '';
     document.querySelector('.btn-confirm').style.display = 'none';
   }
 }
@@ -1568,55 +1544,46 @@ function switchToManual() {
   document.getElementById('step-confirm').style.display = 'none';
   showPadMarking();
 }
-onStripSelected._draw = sfDraw;
-attachDrag(sfCanvas, onStripSelected);
 
 // ═══════════════════════════════════════════════════════════════
 //  STEP 3 — MARK PADS (within strip crop)
 // ═══════════════════════════════════════════════════════════════
 function showPadMarking() {
-  document.getElementById('step-strip').style.display = 'none';
-  document.getElementById('step-pads').style.display  = 'block';
+  document.getElementById('step-confirm').style.display = 'none';
+  document.getElementById('step-pads').style.display    = 'block';
   padIndex = 0; padRegions = {}; sampledColors = {}; dragRect = null;
 
-  // Compute available canvas height:
-  // viewport height minus: header (~90px), instr row (~56px), dots (~28px),
-  // swatches (~48px), button (~52px), tab bar, padding (~40px)
-  const tabH   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
+  const tabH      = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tab-bar-h')) || 65;
   const reservedH = 90 + 56 + 28 + 48 + 52 + tabH + 40;
   const maxCanvasH = Math.max(120, window.innerHeight - reservedH);
   const maxCanvasW = Math.min(800, window.innerWidth - 32);
 
-  // Scale to fit BOTH width and height constraints
-  const scaleW = maxCanvasW / stripRegion.w;
-  const scaleH = maxCanvasH / stripRegion.h;
+  // Use full natural image dimensions
+  const scaleW = maxCanvasW / naturalW;
+  const scaleH = maxCanvasH / naturalH;
   const scale  = Math.min(1, scaleW, scaleH);
 
-  padCanvas.width  = Math.round(stripRegion.w * scale);
-  padCanvas.height = Math.round(stripRegion.h * scale);
-
-  // Set CSS variable so canvas max-height matches exactly
+  padCanvas.width  = Math.round(naturalW * scale);
+  padCanvas.height = Math.round(naturalH * scale);
   document.documentElement.style.setProperty('--canvas-max-h', maxCanvasH + 'px');
 
   updatePadUI();
 }
 
 function padDraw() {
-  // Draw cropped strip
-  padCtx.drawImage(imgEl,
-    stripRegion.x, stripRegion.y, stripRegion.w, stripRegion.h,
-    0, 0, padCanvas.width, padCanvas.height
-  );
-  const scaleX = stripRegion.w / padCanvas.width;
-  const scaleY = stripRegion.h / padCanvas.height;
+  // Draw full image scaled to pad canvas
+  padCtx.drawImage(imgEl, 0, 0, padCanvas.width, padCanvas.height);
+  const scaleX = naturalW / padCanvas.width;
+  const scaleY = naturalH / padCanvas.height;
 
   // Draw confirmed pad markers
   PAD_ORDER.slice(0, padIndex).forEach(k => {
     const r = padRegions[k]; if (!r) return;
-    const dx = r.x / scaleX, dy = r.y / scaleY, dw = r.w / scaleX, dh = r.h / scaleY;
+    const dx = r.x / scaleX, dy = r.y / scaleY;
+    const dw = r.w / scaleX, dh = r.h / scaleY;
     padCtx.strokeStyle = '#10b981'; padCtx.lineWidth = 2;
-    padCtx.strokeRect(dx,dy,dw,dh);
-    padCtx.fillStyle = 'rgba(16,185,129,0.18)'; padCtx.fillRect(dx,dy,dw,dh);
+    padCtx.strokeRect(dx, dy, dw, dh);
+    padCtx.fillStyle = 'rgba(16,185,129,0.18)'; padCtx.fillRect(dx, dy, dw, dh);
     padCtx.fillStyle = '#10b981'; padCtx.font = 'bold 11px DM Sans,sans-serif';
     padCtx.fillText(PAD_LABELS[k], dx+3, dy+13);
   });
@@ -1633,11 +1600,11 @@ function padDraw() {
 }
 
 function onPadSelected() {
-  const key = PAD_ORDER[padIndex];
-  const scaleX = stripRegion.w / padCanvas.width;
-  const scaleY = stripRegion.h / padCanvas.height;
+  const key    = PAD_ORDER[padIndex];
+  const scaleX = naturalW / padCanvas.width;
+  const scaleY = naturalH / padCanvas.height;
 
-  // Store in strip-relative coords
+  // Store in full natural image coords
   padRegions[key] = {
     x: Math.round(dragRect.x * scaleX),
     y: Math.round(dragRect.y * scaleY),
@@ -1684,10 +1651,9 @@ function updatePadUI() {
 //  COLOR SAMPLING — median pixel from region (strip-relative → full image)
 // ═══════════════════════════════════════════════════════════════
 function sampleMedianColor(region) {
-  const ox = stripRegion ? stripRegion.x : 0;
-  const oy = stripRegion ? stripRegion.y : 0;
-  const safeX = Math.max(0, region.x + ox);
-  const safeY = Math.max(0, region.y + oy);
+  // Pad coords are in full natural image space — sample directly from offscreen
+  const safeX = Math.max(0, region.x);
+  const safeY = Math.max(0, region.y);
   const safeW = Math.min(region.w, offscreen.width  - safeX);
   const safeH = Math.min(region.h, offscreen.height - safeY);
   if (safeW <= 0 || safeH <= 0) return { r:128, g:128, b:128 };
@@ -1833,7 +1799,6 @@ function resetAll() {
   stripRegion = null; padIndex = 0; padRegions = {}; sampledColors = {}; dragRect = null; dragging = false;
 
   document.getElementById('step-upload').style.display  = 'block';
-  document.getElementById('step-strip').style.display   = 'none';
   document.getElementById('step-confirm').style.display = 'none';
   document.getElementById('step-pads').style.display    = 'none';
   document.querySelector('.btn-confirm').style.display  = '';
@@ -1845,7 +1810,6 @@ function resetAll() {
   const dc = document.getElementById('doses-container'); if(dc) dc.innerHTML = '';
   document.getElementById('file-input').value = '';
   document.getElementById('swatch-row').innerHTML = '';
-  document.getElementById('strip-flash').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════

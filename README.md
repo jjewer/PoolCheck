@@ -128,3 +128,10 @@ When a new version is deployed, the app detects it in the background and shows a
 - **Dose calculation engine**: covers pH (soda ash, dry acid, muriatic acid), Free Chlorine (trichlor, dichlor, cal-hypo, liquid chlorine), Total Alkalinity (sodium bicarbonate, muriatic acid), and Stabilizer (cyanuric acid, partial drain for high)
 - **💾 Backup tab**: export full backup (history + pool settings) as a dated JSON file to device Downloads; restore from any previous backup file; clear all data option
 - If pool size not entered, a tappable warning card in results links directly to the My Pool setup tab
+
+### v12
+- **Removed strip crop step**: photo now goes directly to automatic pad detection — no manual cropping required
+- **Fixed auto pad detection**: complete rewrite of the detection algorithm — now works on the full image, uses an adaptive threshold (mean + 0.3×stdev) rather than a fixed 25% of max, measures both saturation and colorfulness per row, applies two-pass threshold lowering if fewer than 4 regions are found on the first pass
+- **Fixed colour overlay rendering**: hex colour fills now use correct `rgba()` values so pad overlays display properly on the confirmation screen
+- **Fixed coordinate system**: pad coordinates are now consistently in full natural image space throughout — detection, sampling, manual marking, and display all use the same reference frame
+- **Fixed `sampleMedianColor`**: removed incorrect `stripRegion` offset; samples directly from the full-resolution offscreen canvas
